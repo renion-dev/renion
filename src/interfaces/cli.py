@@ -9,9 +9,10 @@ from src.application.analyzer import OpportunityAnalyzer
 from src.application.landing_generator import LandingGenerator
 from src.application.advertising import AdvertisingManager
 from src.application.social_post_manager import SocialPostManager
-from src.application.clustering import HypothesisClusterer
-from src.application.market_estimator import MarketEstimator
 from src.infrastructure.social.twitter_poster import TwitterPoster
+from src.infrastructure.social.reddit_poster import RedditPoster
+from src.infrastructure.social.hackernews_poster import HackerNewsPoster
+from src.infrastructure.social.medium_poster import MediumPoster
 from src.config import RSS_SOURCES, GITHUB_REPOS, JOB_RSS_SOURCES
 
 logging.basicConfig(
@@ -41,8 +42,18 @@ async def main():
     clusterer = HypothesisClusterer()
     market_estimator = MarketEstimator(ollama)
     
+    # Соціальні постери (всі dry-run)
     twitter_poster = TwitterPoster()
-    social_manager = SocialPostManager(storage, [twitter_poster])
+    reddit_poster = RedditPoster()
+    hackernews_poster = HackerNewsPoster()
+    medium_poster = MediumPoster()
+    
+    social_manager = SocialPostManager(storage, [
+        twitter_poster,
+        reddit_poster,
+        hackernews_poster,
+        medium_poster
+    ])
     
     async def landing_handler(event):
         await generate_landing_for_hypothesis(event, generator)
