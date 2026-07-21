@@ -5,8 +5,8 @@ from src.domain.object import AionObject
 from src.domain.event import Event
 
 class Storage:
-    """Сховище для об'єктів та подій AION на основі SQLite."""
-    
+    """Сховище для об'єктів та подій AION (SQLite)."""
+
     def __init__(self, db_path: str = "aion.db"):
         self.db_path = db_path
         self.conn = None
@@ -15,8 +15,6 @@ class Storage:
         """Ініціалізує базу даних: створює таблиці, якщо їх немає."""
         if self.conn is None:
             self.conn = await aiosqlite.connect(self.db_path)
-        
-        # Таблиця об'єктів
         await self.conn.execute("""
             CREATE TABLE IF NOT EXISTS objects (
                 id TEXT PRIMARY KEY,
@@ -31,8 +29,6 @@ class Storage:
                 telemetry TEXT
             )
         """)
-        
-        # Таблиця подій
         await self.conn.execute("""
             CREATE TABLE IF NOT EXISTS events (
                 id TEXT PRIMARY KEY,
@@ -43,14 +39,12 @@ class Storage:
                 source TEXT
             )
         """)
-        
         await self.conn.commit()
 
     async def save_object(self, obj: AionObject):
-        """Зберігає об'єкт у базу даних."""
+        """Зберігає об'єкт у БД."""
         if self.conn is None:
             raise RuntimeError("Storage not initialized")
-        
         await self.conn.execute(
             """INSERT OR REPLACE INTO objects
                (id, type, owner, created_at, updated_at, metadata, permissions,
@@ -75,14 +69,10 @@ class Storage:
         """Отримує об'єкт за ID у вигляді словника."""
         if self.conn is None:
             raise RuntimeError("Storage not initialized")
-        
-        async with self.conn.execute(
-            "SELECT * FROM objects WHERE id=?", (object_id,)
-        ) as cursor:
+        async with self.conn.execute("SELECT * FROM objects WHERE id=?", (object_id,)) as cursor:
             row = await cursor.fetchone()
             if row is None:
                 return None
-            
             return {
                 "id": row[0],
                 "type": row[1],
@@ -97,10 +87,9 @@ class Storage:
             }
 
     async def save_event(self, event: Event):
-        """Зберігає подію в базу даних."""
+        """Зберігає подію в БД."""
         if self.conn is None:
             raise RuntimeError("Storage not initialized")
-        
         await self.conn.execute(
             """INSERT INTO events (id, object_id, type, payload, timestamp, source)
                VALUES (?, ?, ?, ?, ?, ?)""",
@@ -116,7 +105,7 @@ class Storage:
         await self.conn.commit()
 
     async def close(self):
-        """Закриває з'єднання з базою даних."""
+        """Закриває з'єднання з БД."""
         if self.conn:
             await self.conn.close()
             self.conn = None
