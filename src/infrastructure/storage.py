@@ -57,6 +57,19 @@ class Storage:
         """)
         await self.conn.execute("""
             CREATE TABLE IF NOT EXISTS invoices (
+        await self.conn.execute("""
+            CREATE TABLE IF NOT EXISTS scan_jobs (
+                id TEXT PRIMARY KEY,
+                status TEXT,
+                started_at TEXT,
+                completed_at TEXT,
+                hypotheses_count INTEGER,
+                error TEXT,
+                metadata TEXT,
+                created_at TEXT,
+                updated_at TEXT
+            )
+        """)
                 id TEXT PRIMARY KEY,
                 object_id TEXT,
                 amount REAL,
@@ -276,3 +289,44 @@ class Storage:
             (status, datetime.utcnow().isoformat(), paid_at, payment_id, invoice_id)
         )
         await self.conn.commit()
+
+    async def save_scan_job(self, job: ScanJob) -> None:
+        """Зберігає стан сканування."""
+        if self.conn is None:
+            raise RuntimeError("Storage not initialized")
+        await self.conn.execute(
+            """INSERT OR REPLACE INTO scan_jobs
+               (id, status, started_at, completed_at, hypotheses_count, error, metadata, created_at, updated_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (
+                job.id, job.status,
+                job.started_at.isoformat() if job.started_at else None,
+                job.completed_at.isoformat() if job.completed_at else None,
+                job.hypotheses_count,
+                job.error,
+                json.dumps(job.metadata),
+                job.created_at.isoformat(),
+                job.updated_at.isoformat()
+            )
+        )
+        await self.conn.commit()
+
+    async def get_latest_scan_job(self) -> Optional[Dict[str, Any]]:
+        """Отримує останній запис сканування."""
+        if self.conn is None:
+            raise RuntimeError("Storage not initialized")
+        async with self.conn.execute("SELECT * FROM scan_jobs ORDER BY created_at DESC LIMIT 1") as cursor:
+            row = await cursor.fetchone()
+            if row is None:
+                return None
+            return {
+                "id": row[0],
+                "status": row[1],
+                "started_at": row[2],
+                "completed_at": row[3],
+                "hypotheses_count": row[4],
+                "error": row[5],
+                "metadata": json.loads(row[6]),
+                "created_at": row[7],
+                "updated_at": row[8]
+            }
