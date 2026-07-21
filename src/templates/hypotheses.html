@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AION — Opportunity Hunter</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #0b0b12; color: #f0f0f5; padding: 2rem 1.5rem; line-height: 1.6; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        h1 { font-size: 2.5rem; font-weight: 700; margin-bottom: 0.5rem; background: linear-gradient(135deg, #fff 30%, #8b8bf7); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .sub { color: #b0b0c8; margin-bottom: 2rem; }
+        .stats { display: flex; gap: 2rem; margin-bottom: 2rem; flex-wrap: wrap; }
+        .stat { background: #14141f; padding: 1rem 2rem; border-radius: 12px; border: 1px solid #1e1e30; }
+        .stat span { font-size: 0.8rem; color: #8080a0; display: block; }
+        .stat strong { font-size: 1.8rem; color: #f0f0ff; }
+        table { width: 100%; border-collapse: collapse; background: #14141f; border-radius: 16px; overflow: hidden; border: 1px solid #1e1e30; }
+        th { background: #1a1a2e; padding: 1rem; text-align: left; font-weight: 600; color: #c8c8ff; }
+        td { padding: 1rem; border-bottom: 1px solid #1a1a2a; }
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background: #1a1a2e; }
+        .badge { display: inline-block; padding: 0.2rem 0.8rem; border-radius: 60px; font-size: 0.7rem; font-weight: 600; }
+        .badge-yes { background: rgba(108,240,108,0.15); color: #6cf06c; border: 1px solid rgba(108,240,108,0.2); }
+        .badge-no { background: rgba(240,108,108,0.15); color: #f06c6c; border: 1px solid rgba(240,108,108,0.2); }
+        .link { color: #8b8bf7; text-decoration: none; font-weight: 600; }
+        .link:hover { text-decoration: underline; }
+        .btn { display: inline-block; background: #6c6cf0; color: #fff; padding: 0.6rem 1.5rem; border-radius: 60px; font-weight: 600; text-decoration: none; font-size: 0.85rem; transition: 0.2s; }
+        .btn:hover { background: #5a5ae0; transform: scale(1.02); }
+        @media (max-width: 768px) {
+            h1 { font-size: 1.8rem; }
+            table { font-size: 0.85rem; }
+            td, th { padding: 0.6rem; }
+            .stats { gap: 1rem; }
+            .stat { padding: 0.8rem 1.2rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧠 Opportunity Hunter</h1>
+        <p class="sub">AI-generated hypotheses based on real user problems</p>
+        
+        <div class="stats">
+            <div class="stat">
+                <span>Total Hypotheses</span>
+                <strong>{{ total }}</strong>
+            </div>
+            <div class="stat">
+                <span>With Landing Page</span>
+                <strong>{{ hypotheses|selectattr('has_landing', 'equalto', True)|list|length }}</strong>
+            </div>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Problem</th>
+                    <th>Headline</th>
+                    <th>MVP</th>
+                    <th>Created</th>
+                    <th>Landing</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for h in hypotheses %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td>{{ h.problem[:60] }}{% if h.problem|length > 60 %}...{% endif %}</td>
+                    <td>{{ h.headline }}</td>
+                    <td>{{ h.mvp[:50] }}{% if h.mvp|length > 50 %}...{% endif %}</td>
+                    <td>{{ h.created_at[:10] }}</td>
+                    <td>
+                        {% if h.has_landing %}
+                        <span class="badge badge-yes">✅ Yes</span>
+                        {% else %}
+                        <span class="badge badge-no">❌ No</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="/hypothesis/{{ h.id }}" class="link">View</a>
+                        {% if h.has_landing %}
+                        | <a href="/landing/{{ h.id }}" class="link" target="_blank">🌐</a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>
