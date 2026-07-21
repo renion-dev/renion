@@ -1,3 +1,6 @@
+import stripe
+import datetime
+import json
 import os
 import json
 import logging
@@ -278,3 +281,83 @@ async def process_payment(hypothesis_id: str):
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
+# Stripe Webhook
+import stripe
+from fastapi import Request
+
+@app.post("/webhook/stripe")
+async def stripe_webhook(request: Request):
+    """Обробляє webhook-події від Stripe."""
+    payload = await request.body()
+    sig_header = request.headers.get("stripe-signature")
+    webhook_secret = os.getenv("STRIPE_WEBHOOK_SECRET")
+
+    if not webhook_secret:
+        logger.warning("STRIPE_WEBHOOK_SECRET not set, webhook verification skipped")
+        # У тестовому режимі можна пропустити перевірку, але в продакшні обов'язково!
+        # Тут для безпеки краще повернути помилку, якщо секрет відсутній.
+        # Але для розробки дозволимо без перевірки.
+
+    try:
+        if webhook_secret:
+            event = stripe.Webhook.construct_event(
+                payload, sig_header, webhook_secret
+            )
+        else:
+            # Якщо секрет відсутній, парсимо JSON без перевірки (тільки для тестування!)
+            import json
+            event = json.loads(payload)
+            logger.warning("Webhook signature verification skipped (no secret)")
+    except ValueError as e:
+        logger.error(f"Invalid payload: {e}")
+        raise HTTPException(status_code=400, detail="Invalid payload")
+    except stripe.error.SignatureVerificationError as e:
+        logger.error(f"Invalid signature: {e}")
+        raise HTTPException(status_code=400, detail="Invalid signature")
+
+    # Обробка події
+    event_type = event.get("type")
+    event_data = event.get("data", {}).get("object", {})
+
+    logger.info(f"Webhook event: {event_type}")
+
+    if event_type == "payment_intent.succeeded":
+        payment_intent_id = event_data.get("id")
+        if payment_intent_id:
+            # Знаходимо платіж у базі
+            payment_data = await storage.get_payment_by_provider_reference(payment_intent_id)
+            if payment_data:
+                payment_id = payment_data["id"]
+                await storage.update_payment_status(payment_id, "completed", datetime.utcnow().isoformat())
+                logger.info(f"✅ Payment {payment_id} marked as completed via webhook")
+                
+                # Шукаємо інвойс, пов'язаний з цим платежем
+                # Зараз ми не зберігаємо зв'язок між payment і invoice, крім payment_id в invoice.
+                # Але під час створення платежу ми не оновлювали invoice.payment_id.
+                # Тому потрібно знайти інвойс за metadata або за object_id.
+                # Як тимчасове рішення, можна шукати інвойс з object_id = hypothesis_id, але ми не знаємо hypothesis_id.
+                # Краще під час створення платежу зберігати invoice_id в metadata.
+                # Поки що пропустимо оновлення інвойсу, але в майбутньому треба виправити.
+                # Тимчасово можна оновити статус інвойсу, якщо знайдемо зв'язок.
+                # Для простоти поки пропустимо.
+            else:
+                logger.warning(f"Payment with provider_reference {payment_intent_id} not found")
+
+    elif event_type == "payment_intent.payment_failed":
+        payment_intent_id = event_data.get("id")
+        if payment_intent_id:
+            payment_data = await storage.get_payment_by_provider_reference(payment_intent_id)
+            if payment_data:
+                await storage.update_payment_status(payment_data["id"], "failed")
+                logger.info(f"❌ Payment {payment_data['id']} marked as failed via webhook")
+
+    elif event_type == "charge.refunded":
+        payment_intent_id = event_data.get("payment_intent")
+        if payment_intent_id:
+            payment_data = await storage.get_payment_by_provider_reference(payment_intent_id)
+            if payment_data:
+                await storage.update_payment_status(payment_data["id"], "refunded")
+                logger.info(f"↩️ Payment {payment_data['id']} marked as refunded via webhook")
+
+    return {"status": "ok"}

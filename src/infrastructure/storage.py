@@ -235,3 +235,44 @@ class Storage:
         if self.conn:
             await self.conn.close()
             self.conn = None
+
+    async def get_payment_by_provider_reference(self, provider_reference: str) -> Optional[Dict[str, Any]]:
+        """Отримує платіж за provider_reference (id Stripe PaymentIntent)."""
+        if self.conn is None:
+            raise RuntimeError("Storage not initialized")
+        async with self.conn.execute("SELECT * FROM payments WHERE provider_reference=?", (provider_reference,)) as cursor:
+            row = await cursor.fetchone()
+            if row is None:
+                return None
+            return {
+                "id": row[0],
+                "amount": row[1],
+                "currency": row[2],
+                "status": row[3],
+                "method": row[4],
+                "provider_reference": row[5],
+                "metadata": json.loads(row[6]),
+                "created_at": row[7],
+                "updated_at": row[8],
+                "completed_at": row[9]
+            }
+
+    async def update_payment_status(self, payment_id: str, status: str, completed_at: Optional[str] = None) -> None:
+        """Оновлює статус платежу."""
+        if self.conn is None:
+            raise RuntimeError("Storage not initialized")
+        await self.conn.execute(
+            "UPDATE payments SET status=?, updated_at=?, completed_at=? WHERE id=?",
+            (status, datetime.utcnow().isoformat(), completed_at, payment_id)
+        )
+        await self.conn.commit()
+
+    async def update_invoice_status(self, invoice_id: str, status: str, payment_id: Optional[str] = None, paid_at: Optional[str] = None) -> None:
+        """Оновлює статус інвойсу."""
+        if self.conn is None:
+            raise RuntimeError("Storage not initialized")
+        await self.conn.execute(
+            "UPDATE invoices SET status=?, updated_at=?, paid_at=?, payment_id=? WHERE id=?",
+            (status, datetime.utcnow().isoformat(), paid_at, payment_id, invoice_id)
+        )
+        await self.conn.commit()
