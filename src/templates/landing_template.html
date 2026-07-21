@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{HEADLINE}}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; 
+            background: #0b0b12; 
+            color: #f0f0f5; 
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+        .container { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem; }
+        
+        /* Hero */
+        .hero { 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            text-align: center; 
+            padding: 3rem 0 2rem;
+            position: relative;
+        }
+        .hero::after {
+            content: '';
+            position: absolute;
+            top: -20%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(108,108,240,0.08) 0%, transparent 70%);
+            border-radius: 50%;
+            z-index: -1;
+        }
+        .hero .badge {
+            display: inline-block;
+            background: rgba(108,108,240,0.15);
+            color: #8b8bf7;
+            padding: 0.3rem 1.2rem;
+            border-radius: 60px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            margin-bottom: 1.5rem;
+            border: 1px solid rgba(108,108,240,0.2);
+        }
+        .hero h1 { 
+            font-size: 3.8rem; 
+            font-weight: 900; 
+            line-height: 1.1; 
+            margin-bottom: 1.2rem;
+            background: linear-gradient(135deg, #ffffff 20%, #a8a8ff 60%, #6c6cf0 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            max-width: 800px;
+        }
+        .hero .sub { 
+            font-size: 1.25rem; 
+            color: #b0b0c8; 
+            max-width: 600px; 
+            margin: 0 auto 2rem;
+            font-weight: 300;
+            line-height: 1.7;
+        }
+        .hero .cta-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            justify-content: center;
+        }
+        .btn-primary {
+            background: #6c6cf0;
+            color: #fff;
+            padding: 0.9rem 2.8rem;
+            border-radius: 60px;
+            font-weight: 700;
+            font-size: 1.05rem;
+            border: none;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            text-decoration: none;
+            display: inline-block;
+            box-shadow: 0 8px 24px rgba(108,108,240,0.25);
+        }
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 32px rgba(108,108,240,0.35);
+            background: #7a7aff;
+        }
+        .btn-secondary {
+            background: transparent;
+            color: #b0b0c8;
+            padding: 0.9rem 2.8rem;
+            border-radius: 60px;
+            font-weight: 600;
+            font-size: 1.05rem;
+            border: 1px solid #2a2a3e;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn-secondary:hover {
+            border-color: #6c6cf0;
+            color: #fff;
+        }
+
+        /* Sections */
+        .section {
+            margin: 4rem 0;
+        }
+        .section-title {
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+        .section-desc {
+            text-align: center;
+            color: #b0b0c8;
+            max-width: 600px;
+            margin: 0 auto 2.5rem;
+            font-weight: 300;
+        }
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+        }
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 2rem;
+        }
+        .card {
+            background: #14141f;
+            padding: 2rem 1.8rem;
+            border-radius: 24px;
+            border: 1px solid #1e1e30;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+        }
+        .card:hover {
+            transform: translateY(-6px);
+            border-color: #6c6cf0;
+            box-shadow: 0 12px 32px rgba(108,108,240,0.08);
+        }
+        .card .icon {
+            font-size: 2.2rem;
+            margin-bottom: 0.8rem;
+        }
+        .card h3 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: #e8e8ff;
+        }
+        .card p {
+            color: #b0b0c8;
+            font-weight: 300;
+            font-size: 0.95rem;
+        }
+        .card.feature {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            background: transparent;
+            border: none;
+            padding: 0.5rem 0;
+            box-shadow: none;
+        }
+        .card.feature:hover {
+            transform: none;
+            border: none;
+        }
+        .card.feature .icon {
+            font-size: 1.5rem;
+            margin: 0;
+            flex-shrink: 0;
+            width: 2rem;
+        }
+        .card.feature h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0.2rem;
+        }
+        .card.feature p {
+            font-size: 0.9rem;
+        }
+
+        /* CTA Section */
+        .cta-box {
+            background: linear-gradient(145deg, #14141f, #1a1a2e);
+            border-radius: 32px;
+            padding: 3rem 2rem;
+            text-align: center;
+            border: 1px solid #2a2a44;
+            margin: 3rem 0;
+        }
+        .cta-box h2 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin-bottom: 0.8rem;
+        }
+        .cta-box p {
+            color: #b0b0c8;
+            max-width: 500px;
+            margin: 0 auto 1.8rem;
+            font-weight: 300;
+        }
+        .form-inline {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.8rem;
+            justify-content: center;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        .form-inline input {
+            flex: 1;
+            min-width: 200px;
+            padding: 0.9rem 1.4rem;
+            border-radius: 60px;
+            border: 1px solid #2a2a3e;
+            background: #0b0b12;
+            color: #fff;
+            font-size: 1rem;
+            outline: none;
+            transition: 0.2s;
+        }
+        .form-inline input:focus {
+            border-color: #6c6cf0;
+        }
+        .form-inline .btn-primary {
+            padding: 0.9rem 2.5rem;
+        }
+        .disclaimer {
+            font-size: 0.75rem;
+            color: #606080;
+            margin-top: 1rem;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            color: #606080;
+            padding: 2rem 0 1rem;
+            border-top: 1px solid #1a1a2a;
+            margin-top: 2rem;
+            font-size: 0.9rem;
+            font-weight: 300;
+        }
+        footer a {
+            color: #8b8bf7;
+            text-decoration: none;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 2.5rem; }
+            .section-title { font-size: 1.8rem; }
+            .cta-box h2 { font-size: 1.8rem; }
+        }
+        @media (max-width: 480px) {
+            .hero h1 { font-size: 2rem; }
+            .hero .sub { font-size: 1rem; }
+            .grid-2, .grid-3 { grid-template-columns: 1fr; }
+            .container { padding: 1rem; }
+            .cta-box { padding: 2rem 1rem; }
+            .form-inline input { min-width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+
+        <!-- HERO -->
+        <section class="hero">
+            <span class="badge">🚀 Validated by AI</span>
+            <h1>{{HEADLINE}}</h1>
+            <p class="sub">{{PROBLEM_DESC}}</p>
+            <div class="cta-group">
+                <button class="btn-primary" onclick="document.getElementById('cta-form').scrollIntoView({behavior:'smooth'})">{{CTA}}</button>
+                <a href="#features" class="btn-secondary">Learn More →</a>
+            </div>
+        </section>
+
+        <!-- PROBLEM -->
+        <section class="section" id="problem">
+            <h2 class="section-title">The Problem</h2>
+            <p class="section-desc">{{PROBLEM_DESC}}</p>
+            <div class="grid-2">
+                <div class="card">
+                    <div class="icon">😟</div>
+                    <h3>What people struggle with</h3>
+                    <p>{{PROBLEM}}</p>
+                </div>
+                <div class="card">
+                    <div class="icon">💡</div>
+                    <h3>Our solution</h3>
+                    <p>{{MVP}}</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- FEATURES / BENEFITS -->
+        <section class="section" id="features">
+            <h2 class="section-title">Why {{PRODUCT_NAME}}</h2>
+            <p class="section-desc">Built to solve the problem efficiently and elegantly.</p>
+            <div class="grid-3">
+                {{FEATURES}}
+            </div>
+        </section>
+
+        <!-- CTA -->
+        <section class="cta-box" id="cta-form">
+            <h2>🚀 Get Early Access</h2>
+            <p>Join the waitlist and be the first to know when we launch. No spam, just updates.</p>
+            <form action="#" method="POST">
+                <div class="form-inline">
+                    <input type="email" placeholder="Enter your email" required>
+                    <button type="submit" class="btn-primary">{{CTA}}</button>
+                </div>
+            </form>
+            <p class="disclaimer">We respect your privacy. Unsubscribe anytime.</p>
+        </section>
+
+        <!-- FOOTER -->
+        <footer>
+            © 2026 <a href="#">{{PRODUCT_NAME}}</a> — built with RENION
+        </footer>
+
+    </div>
+</body>
+</html>
