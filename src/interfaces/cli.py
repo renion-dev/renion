@@ -2,37 +2,44 @@ import asyncio
 import logging
 from src.infrastructure.storage import Storage
 from src.infrastructure.event_bus import EventBus
+from src.infrastructure.llm.ollama_client import OllamaClient
 from src.application.opportunity_hunter import OpportunityHunter
 from src.application.handlers import log_opportunity
+from src.application.analyzer import OpportunityAnalyzer
 from src.config import RSS_SOURCES
 
-# Налаштовуємо логування
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
+logger = logging.getLogger(__name__)
 
 async def main():
-    # Ініціалізація сховища
     storage = Storage("aion.db")
     await storage.init()
     
-    # Ініціалізація шини подій
     event_bus = EventBus(storage)
-    
-    # Підписка на події
     event_bus.subscribe("opportunity_created", log_opportunity)
+    event_bus.subscribe("hypothesis_generated", log_opportunity)
     
-    # Запускаємо обробку подій у фоні
     asyncio.create_task(event_bus.run())
     
-    # Створюємо агента з реальними джерелами
-    hunter = OpportunityHunter(storage, event_bus, RSS_SOURCES)
+    # Підключення до Ollama
+    ollama = OllamaClient()
+    connected = await ollama.check_connection()
+    if not connected:
+        logger.warning("Ollama not connected. Please start Ollama and install model llama3:latest")
+    
+    # СТВОРЮЄМО АНАЛІЗАТОР
+    analyzer = OpportunityAnalyzer(ollama)
+    
+    # ПЕРЕДАЄМО АНАЛІЗАТОР, а не ollama
+    hunter = OpportunityHunter(storage, event_bus, RSS_SOURCES, analyzer)
     await hunter.scan()
     
-    print("✅ Scan complete. Objects saved in aion.db")
+    print("✅ Scan and analysis complete. Objects saved in aion.db")
     
-    await asyncio.sleep(0.5)
+    await asyncio.sleep(1)
     await storage.close()
 
 if __name__ == "__main__":
