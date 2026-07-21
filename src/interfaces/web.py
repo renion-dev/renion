@@ -98,6 +98,88 @@ async def list_hypotheses():
             <p class="sub">AI-generated hypotheses based on real user problems</p>
             <div class="stats">
                 <div class="stat"><span>Total</span><strong>""" + str(len(rows)) + """</strong></div>
+            <div style="margin: 1rem 0; display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+                <button id="scanBtn" class="btn-primary" style="padding: 0.6rem 1.5rem; background: #6c6cf0; border: none; border-radius: 60px; color: #fff; font-weight: 600; cursor: pointer;">🚀 Запустити сканування</button>
+                <span id="scanStatus" style="color: #b0b0c8; font-size: 0.9rem;">Статус: <span id="statusText">не запущено</span></span>
+                <span id="scanResult" style="color: #b0b0c8; font-size: 0.9rem;"></span>
+            </div>
+            <script>
+                async function updateStatus() {
+                    try {
+                        const resp = await fetch('/api/scan/status');
+                        const data = await resp.json();
+                        const statusText = document.getElementById('statusText');
+                        const scanResult = document.getElementById('scanResult');
+                        const scanBtn = document.getElementById('scanBtn');
+                        if (data.status === 'running') {
+                            statusText.textContent = '🔄 виконується...';
+                            scanBtn.disabled = true;
+                            scanBtn.style.opacity = '0.6';
+                            scanResult.textContent = '';
+                        } else if (data.status === 'completed') {
+                            statusText.textContent = '✅ завершено';
+                            scanBtn.disabled = false;
+                            scanBtn.style.opacity = '1';
+                            scanResult.textContent = `Гіпотез: ${data.hypotheses_count || 0}`;
+                        } else if (data.status === 'failed') {
+                            statusText.textContent = '❌ помилка';
+                            scanBtn.disabled = false;
+                            scanBtn.style.opacity = '1';
+                            scanResult.textContent = `Помилка: ${data.error || ''}`;
+                        } else {
+                            statusText.textContent = '⏸️ не запущено';
+                            scanBtn.disabled = false;
+                            scanBtn.style.opacity = '1';
+                            scanResult.textContent = '';
+                        }
+                    } catch (e) {
+                        console.error('Status update error:', e);
+                    }
+                }
+
+                async function startScan() {
+                    const scanBtn = document.getElementById('scanBtn');
+                    scanBtn.disabled = true;
+                    scanBtn.textContent = '⏳ Запуск...';
+                    try {
+                        const resp = await fetch('/api/scan', { method: 'POST' });
+                        const data = await resp.json();
+                        if (data.status === 'started') {
+                            document.getElementById('statusText').textContent = '🔄 запущено...';
+                        } else if (data.status === 'already_running') {
+                            document.getElementById('statusText').textContent = '⏳ вже виконується';
+                        }
+                    } catch (e) {
+                        console.error('Start scan error:', e);
+                        document.getElementById('statusText').textContent = '❌ помилка запуску';
+                    }
+                    scanBtn.textContent = '🚀 Запустити сканування';
+                    scanBtn.disabled = false;
+                    // Оновлюємо статус через секунду
+                    setTimeout(updateStatus, 1000);
+                }
+
+                document.addEventListener('DOMContentLoaded', () => {
+                    updateStatus();
+                    document.getElementById('scanBtn').addEventListener('click', startScan);
+                    // Оновлюємо статус кожні 5 секунд, якщо виконується
+                    setInterval(updateStatus, 5000);
+                });
+            </script>
+            <style>
+                .btn-primary {
+                    background: #6c6cf0;
+                    color: #fff;
+                    padding: 0.6rem 1.5rem;
+                    border: none;
+                    border-radius: 60px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: 0.2s;
+                }
+                .btn-primary:hover { background: #5a5ae0; transform: scale(1.02); }
+                .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+            </style>
                 <div class="stat"><span>With Landing</span><strong>""" + str(sum(1 for r in rows if os.path.exists(f"landings/{r[0]}.html"))) + """</strong></div>
             </div>
             <table>
