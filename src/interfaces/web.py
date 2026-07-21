@@ -1,3 +1,4 @@
+from datetime import datetime
 import stripe
 import datetime
 import json
@@ -105,9 +106,9 @@ async def list_hypotheses():
     
     for idx, row in enumerate(rows, 1):
         metadata = json.loads(row[1])
-        problem = metadata.get("problem", "Unknown")
-        headline = metadata.get("landing_headline", "No headline")
-        mvp = metadata.get("mvp", "No MVP")
+        problem = metadata.get("problem") or "Unknown"
+        headline = metadata.get("landing_headline") or "No headline"
+        mvp = metadata.get("mvp") or "No MVP"
         created = row[2][:10] if row[2] else "N/A"
         has_landing = os.path.exists(f"landings/{row[0]}.html")
         
@@ -242,7 +243,7 @@ async def process_payment(hypothesis_id: str):
     if not row:
         invoice = Invoice(
             object_id=hypothesis_id,
-            amount=99.00,
+            amount=1.69,
             currency="USD",
             description=f"Validation payment for hypothesis {hypothesis_id}",
             status="draft"
@@ -255,13 +256,13 @@ async def process_payment(hypothesis_id: str):
             currency=row[3],
             id=row[0],
             status=row[4],
-            due_date=row[5],
-            paid_at=row[6],
+            due_date=datetime.datetime.fromisoformat(row[5]) if row[5] else None,
+            paid_at=datetime.datetime.fromisoformat(row[6]) if row[6] else None,
             payment_id=row[7],
             description=row[8],
             metadata=json.loads(row[9]),
-            created_at=row[10],
-            updated_at=row[11]
+            created_at=datetime.datetime.fromisoformat(row[10]),
+            updated_at=datetime.datetime.fromisoformat(row[11])
         )
     
     payment = await payment_processor.process_invoice(invoice)
