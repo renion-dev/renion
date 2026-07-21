@@ -108,3 +108,29 @@ class Storage:
         if self.conn:
             await self.conn.close()
             self.conn = None
+
+    async def get_object_by_metadata(self, key: str, value: str, object_type: str) -> Optional[Dict[str, Any]]:
+        """Шукає об'єкт за значенням у metadata та типом."""
+        if self.conn is None:
+            raise RuntimeError("Storage not initialized. Call init() first.")
+        
+        # Використовуємо json_extract для пошуку в JSON полі metadata
+        async with self.conn.execute(
+            "SELECT * FROM objects WHERE type=? AND json_extract(metadata, '$.' || ?) = ?",
+            (object_type, key, value)
+        ) as cursor:
+            row = await cursor.fetchone()
+            if row is None:
+                return None
+            return {
+                "id": row[0],
+                "type": row[1],
+                "owner": row[2],
+                "created_at": row[3],
+                "updated_at": row[4],
+                "metadata": json.loads(row[5]),
+                "permissions": json.loads(row[6]),
+                "lifecycle": row[7],
+                "history": json.loads(row[8]),
+                "telemetry": json.loads(row[9])
+            }
