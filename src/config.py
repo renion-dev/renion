@@ -1,4 +1,4 @@
-# Джерела даних для Opportunity Hunter
+# RSS-стрічки новин
 RSS_SOURCES = [
     "https://news.ycombinator.com/rss",
     "https://www.reddit.com/r/startups/.rss",
@@ -8,6 +8,20 @@ RSS_SOURCES = [
     "https://www.producthunt.com/feed",
 ]
 
-# Налаштування Ollama
-OLLAMA_MODEL = "llama3:latest"  # або "llama3", "mistral"
-OLLAMA_BASE_URL = "http://localhost:11434"
+# GitHub репозиторії
+GITHUB_REPOS = [
+    "microsoft/vscode",
+    "facebook/react",
+    "vercel/next.js",
+    "angular/angular",
+    "tensorflow/tensorflow",
+    "kubernetes/kubernetes",
+    "grafana/grafana",
+]
+
+# RSS-стрічки вакансій (перевірені робочі джерела)
+JOB_RSS_SOURCES = [
+    "https://weworkremotely.com/remote-jobs.rss",  # ~50-150 свіжих вакансій
+    "https://himalayas.app/jobs/rss",              # 100 останніх вакансій
+    "https://hireweb3.io/job/rss",                 # Web3/крипто
+]

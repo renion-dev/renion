@@ -8,7 +8,7 @@ from src.application.handlers import log_opportunity, generate_landing_for_hypot
 from src.application.analyzer import OpportunityAnalyzer
 from src.application.landing_generator import LandingGenerator
 from src.application.advertising import AdvertisingManager
-from src.config import RSS_SOURCES
+from src.config import RSS_SOURCES, GITHUB_REPOS, JOB_RSS_SOURCES
 
 logging.basicConfig(
     level=logging.INFO,
@@ -49,7 +49,7 @@ async def main():
     
     asyncio.create_task(event_bus.run())
     
-    hunter = OpportunityHunter(storage, event_bus, RSS_SOURCES, analyzer)
+    hunter = OpportunityHunter(storage, event_bus, RSS_SOURCES, GITHUB_REPOS, JOB_RSS_SOURCES, analyzer)
     await hunter.scan()
     
     await event_bus.queue.join()
