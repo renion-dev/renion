@@ -26,14 +26,17 @@ async def main():
     
     # Підключення до Ollama
     ollama = OllamaClient()
-    connected = await ollama.check_connection()
-    if not connected:
-        logger.warning("Ollama not connected. Please start Ollama and install model llama3:latest")
+    available = await ollama.is_available()
+    if not available:
+        logger.warning("⚠️ Ollama not available. Please start Ollama and install model llama3:latest")
+        # Можна вийти або продовжити без LLM – поки продовжуємо
+    else:
+        logger.info("✅ Ollama available")
     
-    # СТВОРЮЄМО АНАЛІЗАТОР
+    # Створюємо аналізатор
     analyzer = OpportunityAnalyzer(ollama)
     
-    # ПЕРЕДАЄМО АНАЛІЗАТОР, а не ollama
+    # Створюємо агента з реальними джерелами
     hunter = OpportunityHunter(storage, event_bus, RSS_SOURCES, analyzer)
     await hunter.scan()
     

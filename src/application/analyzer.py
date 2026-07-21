@@ -1,4 +1,5 @@
 import logging
+import json
 from typing import List, Dict, Any
 from src.infrastructure.llm.ollama_client import OllamaClient
 
@@ -18,12 +19,24 @@ class OpportunityAnalyzer:
         if not articles:
             return {"error": "No articles to analyze"}
 
-        # Підготовка даних: об'єднуємо заголовки та описи
+        # Обмежуємо кількість статей до 10 найновіших
+        def get_sort_key(article):
+            published = article.get("published", "")
+            if published is None:
+                return ""
+            return str(published)
+
+        sorted_articles = sorted(articles, key=get_sort_key, reverse=True)
+        limited_articles = sorted_articles[:10]
+
+        # Підготовка даних: об'єднуємо заголовки та скорочені описи
         texts = []
-        for a in articles:
+        for a in limited_articles:
             title = a.get("title", "")
-            summary = a.get("summary", "")
-            texts.append(f"Title: {title}\nSummary: {summary[:200]}")
+            summary = a.get("summary", "")[:300]
+            if not summary:
+                summary = title
+            texts.append(f"Title: {title}\nSummary: {summary}")
         
         combined_text = "\n---\n".join(texts)
         
@@ -63,7 +76,6 @@ class OpportunityAnalyzer:
         response = await self.ollama.generate(prompt, system_prompt)
         if response:
             try:
-                import json
                 result = json.loads(response)
                 return result
             except json.JSONDecodeError:
