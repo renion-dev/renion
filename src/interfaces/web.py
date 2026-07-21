@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime
 import stripe
 import datetime
@@ -362,3 +363,78 @@ async def stripe_webhook(request: Request):
                 logger.info(f"↩️ Payment {payment_data['id']} marked as refunded via webhook")
 
     return {"status": "ok"}
+
+# Глобальна змінна для поточного завдання сканування
+_scan_task = None
+
+@app.post("/api/scan")
+async def start_scan():
+    """Запускає сканування у фоновому режимі."""
+    global _scan_task
+    
+    # Перевіряємо, чи вже є запущене сканування
+    latest = await storage.get_latest_scan_job()
+    if latest and latest["status"] == "running":
+        return {"status": "already_running", "message": "Scan is already running"}
+    
+    # Створюємо новий ScanJob
+    from src.domain.scan_job import ScanJob
+    job = ScanJob()
+    job.start()
+    await storage.save_scan_job(job)
+    
+    # Запускаємо сканування у фоновому завданні
+    async def run_scan():
+        try:
+            # Імпортуємо всі необхідні компоненти
+            from src.infrastructure.llm.ollama_client import OllamaClient
+            from src.application.opportunity_hunter import OpportunityHunter
+            from src.application.analyzer import OpportunityAnalyzer
+            from src.application.clustering import HypothesisClusterer
+            from src.application.market_estimator import MarketEstimator
+            from src.config import RSS_SOURCES, GITHUB_REPOS, JOB_RSS_SOURCES
+            
+            ollama = OllamaClient()
+            analyzer = OpportunityAnalyzer(ollama)
+            clusterer = HypothesisClusterer()
+            market_estimator = MarketEstimator(ollama)
+            
+            hunter = OpportunityHunter(
+                storage, event_bus, RSS_SOURCES, GITHUB_REPOS, JOB_RSS_SOURCES,
+                analyzer, clusterer, market_estimator
+            )
+            await hunter.scan()
+            
+            # Оновлюємо статус після завершення
+            # Отримуємо кількість гіпотез
+            cursor = await storage.conn.execute("SELECT COUNT(*) FROM objects WHERE type='Hypothesis'")
+            count_row = await cursor.fetchone()
+            hypotheses_count = count_row[0] if count_row else 0
+            
+            job.complete(hypotheses_count)
+            await storage.save_scan_job(job)
+            logger.info(f"✅ Scan completed: {hypotheses_count} hypotheses")
+        except Exception as e:
+            job.fail(str(e))
+            await storage.save_scan_job(job)
+            logger.error(f"❌ Scan failed: {e}")
+    
+    # Запускаємо у фоні
+    _scan_task = asyncio.create_task(run_scan())
+    
+    return {"status": "started", "job_id": job.id}
+
+@app.get("/api/scan/status")
+async def get_scan_status():
+    """Повертає статус останнього сканування."""
+    latest = await storage.get_latest_scan_job()
+    if not latest:
+        return {"status": "idle", "message": "No scan has been run yet"}
+    
+    return {
+        "status": latest["status"],
+        "started_at": latest["started_at"],
+        "completed_at": latest["completed_at"],
+        "hypotheses_count": latest["hypotheses_count"],
+        "error": latest["error"]
+    }
