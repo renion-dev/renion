@@ -1,30 +1,30 @@
-import asyncio
-from datetime import datetime
-import stripe
-import datetime
-import json
 import os
 import json
+import asyncio
 import logging
+from datetime import datetime
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 from dotenv import load_dotenv
 from src.infrastructure.storage import Storage
 from src.domain.payment import Invoice
 from src.application.use_cases.payment_processor import PaymentProcessor
 
-# Завантаження змінних середовища
 load_dotenv()
 
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="RENION Opportunity Hunter", version="0.1.0")
+app = FastAPI(title="RENION Opportunity Hunter", version="1.0.0")
 
 storage = Storage("aion.db")
 
 if os.path.exists("landings"):
     app.mount("/landings", StaticFiles(directory="landings"), name="landings")
+
+# Шаблони
+templates = Jinja2Templates(directory="src/templates")
 
 # Вибір платіжного провайдера
 provider_type = os.getenv("PAYMENT_PROVIDER", "simulated")
@@ -37,7 +37,6 @@ if provider_type == "stripe":
         logger.info("✅ StripeProvider initialized")
     except Exception as e:
         logger.error(f"Failed to initialize StripeProvider: {e}")
-        # Fallback на SimulatedProvider
         from src.infrastructure.payment.simulated_provider import SimulatedProvider
         payment_provider = SimulatedProvider()
         logger.warning("⚠️ Falling back to SimulatedProvider")
@@ -48,11 +47,21 @@ else:
 
 payment_processor = PaymentProcessor(storage, payment_provider)
 
+_scan_task = None
+
 @app.on_event("startup")
 async def startup():
     await storage.init()
 
+# --- Лендинг ---
 @app.get("/", response_class=HTMLResponse)
+async def landing():
+    """Презентаційна сторінка RENION."""
+    with open("src/templates/landing_page.html", "r", encoding="utf-8") as f:
+        return HTMLResponse(content=f.read())
+
+# --- Список гіпотез ---
+@app.get("/hypotheses", response_class=HTMLResponse)
 async def list_hypotheses():
     if storage.conn is None:
         await storage.init()
@@ -74,9 +83,20 @@ async def list_hypotheses():
             * { margin: 0; padding: 0; box-sizing: border-box; }
             body { font-family: 'Inter', sans-serif; background: #0b0b12; color: #f0f0f5; padding: 2rem 1.5rem; }
             .container { max-width: 1200px; margin: 0 auto; }
+            .header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 0.5rem; }
             h1 { font-size: 2.5rem; font-weight: 700; background: linear-gradient(135deg, #fff 30%, #8b8bf7); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
             .sub { color: #b0b0c8; margin-bottom: 2rem; }
-            table { width: 100%; border-collapse: collapse; background: #14141f; border-radius: 16px; overflow: hidden; border: 1px solid #1e1e30; }
+            .back-link { color: #8b8bf7; text-decoration: none; font-weight: 600; }
+            .back-link:hover { text-decoration: underline; }
+            .stats { display: flex; gap: 2rem; margin: 1.5rem 0; flex-wrap: wrap; }
+            .stat { background: #14141f; padding: 0.8rem 1.5rem; border-radius: 12px; border: 1px solid #1e1e30; }
+            .stat span { font-size: 0.8rem; color: #8080a0; display: block; }
+            .stat strong { font-size: 1.5rem; color: #f0f0ff; }
+            .scan-bar { margin: 1rem 0; display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
+            .btn-primary { background: #6c6cf0; color: #fff; padding: 0.6rem 1.5rem; border: none; border-radius: 60px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+            .btn-primary:hover { background: #5a5ae0; transform: scale(1.02); }
+            .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+            table { width: 100%; border-collapse: collapse; background: #14141f; border-radius: 16px; overflow: hidden; border: 1px solid #1e1e30; margin-top: 1rem; }
             th { background: #1a1a2e; padding: 1rem; text-align: left; font-weight: 600; color: #c8c8ff; }
             td { padding: 1rem; border-bottom: 1px solid #1a1a2a; }
             tr:hover td { background: #1a1a2e; }
@@ -85,21 +105,24 @@ async def list_hypotheses():
             .badge-no { background: rgba(240,108,108,0.15); color: #f06c6c; border: 1px solid rgba(240,108,108,0.2); }
             .link { color: #8b8bf7; text-decoration: none; font-weight: 600; }
             .link:hover { text-decoration: underline; }
-            .stats { display: flex; gap: 2rem; margin: 1.5rem 0; }
-            .stat { background: #14141f; padding: 0.8rem 1.5rem; border-radius: 12px; border: 1px solid #1e1e30; }
-            .stat span { font-size: 0.8rem; color: #8080a0; display: block; }
-            .stat strong { font-size: 1.5rem; color: #f0f0ff; }
             @media (max-width: 768px) { table { font-size: 0.8rem; } td, th { padding: 0.5rem; } }
         </style>
     </head>
     <body>
         <div class="container">
-            <h1>🧠 Opportunity Hunter</h1>
-            <p class="sub">AI-generated hypotheses based on real user problems</p>
+            <div class="header">
+                <div>
+                    <h1>🧠 Opportunity Hunter</h1>
+                    <p class="sub">AI-generated hypotheses based on real user problems</p>
+                </div>
+                <a href="/" class="back-link">← На головну</a>
+            </div>
             <div class="stats">
                 <div class="stat"><span>Total</span><strong>""" + str(len(rows)) + """</strong></div>
-            <div style="margin: 1rem 0; display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
-                <button id="scanBtn" class="btn-primary" style="padding: 0.6rem 1.5rem; background: #6c6cf0; border: none; border-radius: 60px; color: #fff; font-weight: 600; cursor: pointer;">🚀 Запустити сканування</button>
+                <div class="stat"><span>With Landing</span><strong>""" + str(sum(1 for r in rows if os.path.exists(f"landings/{r[0]}.html"))) + """</strong></div>
+            </div>
+            <div class="scan-bar">
+                <button id="scanBtn" class="btn-primary">🚀 Запустити сканування</button>
                 <span id="scanStatus" style="color: #b0b0c8; font-size: 0.9rem;">Статус: <span id="statusText">не запущено</span></span>
                 <span id="scanResult" style="color: #b0b0c8; font-size: 0.9rem;"></span>
             </div>
@@ -155,33 +178,16 @@ async def list_hypotheses():
                     }
                     scanBtn.textContent = '🚀 Запустити сканування';
                     scanBtn.disabled = false;
-                    // Оновлюємо статус через секунду
                     setTimeout(updateStatus, 1000);
                 }
 
                 document.addEventListener('DOMContentLoaded', () => {
                     updateStatus();
                     document.getElementById('scanBtn').addEventListener('click', startScan);
-                    // Оновлюємо статус кожні 5 секунд, якщо виконується
                     setInterval(updateStatus, 5000);
                 });
             </script>
-            <style>
-                .btn-primary {
-                    background: #6c6cf0;
-                    color: #fff;
-                    padding: 0.6rem 1.5rem;
-                    border: none;
-                    border-radius: 60px;
-                    font-weight: 600;
-                    cursor: pointer;
-                    transition: 0.2s;
-                }
-                .btn-primary:hover { background: #5a5ae0; transform: scale(1.02); }
-                .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
-            </style>
-                <div class="stat"><span>With Landing</span><strong>""" + str(sum(1 for r in rows if os.path.exists(f"landings/{r[0]}.html"))) + """</strong></div>
-            </div>
+
             <table>
                 <thead><tr><th>#</th><th>Problem</th><th>Headline</th><th>MVP</th><th>Created</th><th>Landing</th><th>Action</th></tr></thead>
                 <tbody>
@@ -219,6 +225,7 @@ async def list_hypotheses():
     """
     return HTMLResponse(content=html)
 
+# --- Інші маршрути ---
 @app.get("/hypothesis/{hypothesis_id}", response_class=HTMLResponse)
 async def view_hypothesis(hypothesis_id: str):
     obj = await storage.get_object(hypothesis_id)
@@ -257,34 +264,39 @@ async def view_hypothesis(hypothesis_id: str):
     </head>
     <body>
         <div class="container">
-            <a href="/" class="back">← Back to all hypotheses</a>
+            <a href="/hypotheses" class="back">← Back to all hypotheses</a>
             <div class="card">
-                <h1>{metadata.get('landing_headline', 'Untitled')}</h1>
+                <h1>{metadata.get('landing_headline') or 'Untitled'}</h1>
                 <div class="id">ID: {hypothesis_id[:8]}...</div>
 
                 <div class="field">
                     <div class="label">📌 Problem</div>
-                    <div class="value">{metadata.get('problem', 'N/A')}</div>
+                    <div class="value">{metadata.get('problem') or 'N/A'}</div>
                 </div>
 
                 <div class="field">
                     <div class="label">💡 MVP</div>
-                    <div class="value">{metadata.get('mvp', 'N/A')}</div>
+                    <div class="value">{metadata.get('mvp') or 'N/A'}</div>
                 </div>
 
                 <div class="field">
                     <div class="label">🧪 Hypothesis</div>
-                    <div class="value">{metadata.get('hypothesis', 'N/A')}</div>
+                    <div class="value">{metadata.get('hypothesis') or 'N/A'}</div>
                 </div>
 
                 <div class="field">
                     <div class="label">📈 Frequency</div>
-                    <div class="value">{metadata.get('frequency', 'N/A')}</div>
+                    <div class="value">{metadata.get('frequency') or 'N/A'}</div>
                 </div>
 
                 <div class="field">
                     <div class="label">📞 CTA</div>
-                    <div class="value">{metadata.get('cta', 'N/A')}</div>
+                    <div class="value">{metadata.get('cta') or 'N/A'}</div>
+                </div>
+
+                <div class="field">
+                    <div class="label">📊 Market TAM</div>
+                    <div class="value">{metadata.get('market_tam') or 'N/A'}</div>
                 </div>
 
                 <div class="field">
@@ -314,7 +326,6 @@ async def view_landing(hypothesis_id: str):
 
 @app.post("/api/pay/{hypothesis_id}")
 async def process_payment(hypothesis_id: str):
-    """Створює платіж для гіпотези."""
     if storage.conn is None:
         await storage.init()
     
@@ -339,13 +350,13 @@ async def process_payment(hypothesis_id: str):
             currency=row[3],
             id=row[0],
             status=row[4],
-            due_date=datetime.datetime.fromisoformat(row[5]) if row[5] else None,
-            paid_at=datetime.datetime.fromisoformat(row[6]) if row[6] else None,
+            due_date=datetime.fromisoformat(row[5]) if row[5] else None,
+            paid_at=datetime.fromisoformat(row[6]) if row[6] else None,
             payment_id=row[7],
             description=row[8],
             metadata=json.loads(row[9]),
-            created_at=datetime.datetime.fromisoformat(row[10]),
-            updated_at=datetime.datetime.fromisoformat(row[11])
+            created_at=datetime.fromisoformat(row[10]),
+            updated_at=datetime.fromisoformat(row[11])
         )
     
     payment = await payment_processor.process_invoice(invoice)
@@ -353,128 +364,41 @@ async def process_payment(hypothesis_id: str):
         return HTMLResponse("""
             <h1>✅ Payment Successful!</h1>
             <p>Thank you for your payment. You now have full access.</p>
-            <a href="/">Back to home</a>
+            <a href="/hypotheses">Back to hypotheses</a>
         """)
     else:
         return HTMLResponse("""
             <h1>⏳ Payment Pending</h1>
             <p>Your payment is being processed. You will receive a confirmation shortly.</p>
-            <a href="/">Back to home</a>
+            <a href="/hypotheses">Back to hypotheses</a>
         """)
 
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
-
-# Stripe Webhook
-import stripe
-from fastapi import Request
-
-@app.post("/webhook/stripe")
-async def stripe_webhook(request: Request):
-    """Обробляє webhook-події від Stripe."""
-    payload = await request.body()
-    sig_header = request.headers.get("stripe-signature")
-    webhook_secret = os.getenv("STRIPE_WEBHOOK_SECRET")
-
-    if not webhook_secret:
-        logger.warning("STRIPE_WEBHOOK_SECRET not set, webhook verification skipped")
-        # У тестовому режимі можна пропустити перевірку, але в продакшні обов'язково!
-        # Тут для безпеки краще повернути помилку, якщо секрет відсутній.
-        # Але для розробки дозволимо без перевірки.
-
-    try:
-        if webhook_secret:
-            event = stripe.Webhook.construct_event(
-                payload, sig_header, webhook_secret
-            )
-        else:
-            # Якщо секрет відсутній, парсимо JSON без перевірки (тільки для тестування!)
-            import json
-            event = json.loads(payload)
-            logger.warning("Webhook signature verification skipped (no secret)")
-    except ValueError as e:
-        logger.error(f"Invalid payload: {e}")
-        raise HTTPException(status_code=400, detail="Invalid payload")
-    except stripe.error.SignatureVerificationError as e:
-        logger.error(f"Invalid signature: {e}")
-        raise HTTPException(status_code=400, detail="Invalid signature")
-
-    # Обробка події
-    event_type = event.get("type")
-    event_data = event.get("data", {}).get("object", {})
-
-    logger.info(f"Webhook event: {event_type}")
-
-    if event_type == "payment_intent.succeeded":
-        payment_intent_id = event_data.get("id")
-        if payment_intent_id:
-            # Знаходимо платіж у базі
-            payment_data = await storage.get_payment_by_provider_reference(payment_intent_id)
-            if payment_data:
-                payment_id = payment_data["id"]
-                await storage.update_payment_status(payment_id, "completed", datetime.utcnow().isoformat())
-                logger.info(f"✅ Payment {payment_id} marked as completed via webhook")
-                
-                # Шукаємо інвойс, пов'язаний з цим платежем
-                # Зараз ми не зберігаємо зв'язок між payment і invoice, крім payment_id в invoice.
-                # Але під час створення платежу ми не оновлювали invoice.payment_id.
-                # Тому потрібно знайти інвойс за metadata або за object_id.
-                # Як тимчасове рішення, можна шукати інвойс з object_id = hypothesis_id, але ми не знаємо hypothesis_id.
-                # Краще під час створення платежу зберігати invoice_id в metadata.
-                # Поки що пропустимо оновлення інвойсу, але в майбутньому треба виправити.
-                # Тимчасово можна оновити статус інвойсу, якщо знайдемо зв'язок.
-                # Для простоти поки пропустимо.
-            else:
-                logger.warning(f"Payment with provider_reference {payment_intent_id} not found")
-
-    elif event_type == "payment_intent.payment_failed":
-        payment_intent_id = event_data.get("id")
-        if payment_intent_id:
-            payment_data = await storage.get_payment_by_provider_reference(payment_intent_id)
-            if payment_data:
-                await storage.update_payment_status(payment_data["id"], "failed")
-                logger.info(f"❌ Payment {payment_data['id']} marked as failed via webhook")
-
-    elif event_type == "charge.refunded":
-        payment_intent_id = event_data.get("payment_intent")
-        if payment_intent_id:
-            payment_data = await storage.get_payment_by_provider_reference(payment_intent_id)
-            if payment_data:
-                await storage.update_payment_status(payment_data["id"], "refunded")
-                logger.info(f"↩️ Payment {payment_data['id']} marked as refunded via webhook")
-
-    return {"status": "ok"}
-
-# Глобальна змінна для поточного завдання сканування
-_scan_task = None
-
+# --- API для запуску сканування ---
 @app.post("/api/scan")
 async def start_scan():
-    """Запускає сканування у фоновому режимі."""
     global _scan_task
     
-    # Перевіряємо, чи вже є запущене сканування
     latest = await storage.get_latest_scan_job()
     if latest and latest["status"] == "running":
         return {"status": "already_running", "message": "Scan is already running"}
     
-    # Створюємо новий ScanJob
     from src.domain.scan_job import ScanJob
     job = ScanJob()
     job.start()
     await storage.save_scan_job(job)
     
-    # Запускаємо сканування у фоновому завданні
     async def run_scan():
         try:
-            # Імпортуємо всі необхідні компоненти
+            from src.infrastructure.event_bus import EventBus
             from src.infrastructure.llm.ollama_client import OllamaClient
             from src.application.opportunity_hunter import OpportunityHunter
             from src.application.analyzer import OpportunityAnalyzer
             from src.application.clustering import HypothesisClusterer
             from src.application.market_estimator import MarketEstimator
             from src.config import RSS_SOURCES, GITHUB_REPOS, JOB_RSS_SOURCES
+            
+            event_bus = EventBus(storage)
+            asyncio.create_task(event_bus.run())
             
             ollama = OllamaClient()
             analyzer = OpportunityAnalyzer(ollama)
@@ -487,8 +411,6 @@ async def start_scan():
             )
             await hunter.scan()
             
-            # Оновлюємо статус після завершення
-            # Отримуємо кількість гіпотез
             cursor = await storage.conn.execute("SELECT COUNT(*) FROM objects WHERE type='Hypothesis'")
             count_row = await cursor.fetchone()
             hypotheses_count = count_row[0] if count_row else 0
@@ -501,18 +423,14 @@ async def start_scan():
             await storage.save_scan_job(job)
             logger.error(f"❌ Scan failed: {e}")
     
-    # Запускаємо у фоні
     _scan_task = asyncio.create_task(run_scan())
-    
     return {"status": "started", "job_id": job.id}
 
 @app.get("/api/scan/status")
 async def get_scan_status():
-    """Повертає статус останнього сканування."""
     latest = await storage.get_latest_scan_job()
     if not latest:
         return {"status": "idle", "message": "No scan has been run yet"}
-    
     return {
         "status": latest["status"],
         "started_at": latest["started_at"],
@@ -520,3 +438,7 @@ async def get_scan_status():
         "hypotheses_count": latest["hypotheses_count"],
         "error": latest["error"]
     }
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
