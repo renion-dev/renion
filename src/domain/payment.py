@@ -6,9 +6,9 @@ import uuid
 @dataclass
 class Payment:
     """Платіж — грошова транзакція."""
-    id: str = field(default_factory=lambda: str(uuid.uuid4()))
     amount: float
     currency: str = "USD"
+    id: str = field(default_factory=lambda: str(uuid.uuid4()))
     status: str = "pending"  # pending, completed, failed, refunded
     method: Optional[str] = None  # stripe, paypal, simulated
     provider_reference: Optional[str] = None  # ID у зовнішній системі
@@ -33,11 +33,11 @@ class Payment:
 @dataclass
 class Transaction:
     """Транзакція — запис про рух коштів."""
-    id: str = field(default_factory=lambda: str(uuid.uuid4()))
     payment_id: str
-    type: str  # charge, refund, capture, etc.
     amount: float
     currency: str = "USD"
+    type: str = "charge"  # charge, refund, capture, etc.
+    id: str = field(default_factory=lambda: str(uuid.uuid4()))
     provider_transaction_id: Optional[str] = None
     status: str = "pending"
     metadata: Dict[str, Any] = field(default_factory=dict)
@@ -46,10 +46,10 @@ class Transaction:
 @dataclass
 class Invoice:
     """Рахунок — вимога до оплати."""
-    id: str = field(default_factory=lambda: str(uuid.uuid4()))
     object_id: str  # ID об'єкта, за який виставляється рахунок (наприклад, Hypothesis)
     amount: float
     currency: str = "USD"
+    id: str = field(default_factory=lambda: str(uuid.uuid4()))
     status: str = "draft"  # draft, sent, paid, overdue, cancelled
     due_date: Optional[datetime] = None
     paid_at: Optional[datetime] = None
