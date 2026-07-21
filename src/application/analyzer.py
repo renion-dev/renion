@@ -1,6 +1,7 @@
 import logging
 import json
-from typing import List, Dict, Any
+import re
+from typing import List, Dict, Any, Optional
 from src.infrastructure.llm.ollama_client import OllamaClient
 
 logger = logging.getLogger(__name__)
@@ -73,12 +74,96 @@ class OpportunityAnalyzer:
         }}
         """
         
+        # Перша спроба
         response = await self.ollama.generate(prompt, system_prompt)
-        if response:
+        result = self._try_parse_response(response)
+        
+        # Якщо не вдалося — спроба з іншим промптом
+        if "error" in result or "raw" in result:
+            logger.info("Retrying with more specific JSON prompt...")
+            retry_prompt = f"""
+            Based on the following articles, return ONLY a valid JSON object with the structure:
+            {{
+              "problems": [
+                {{
+                  "description": "Problem description",
+                  "frequency": "How often mentioned",
+                  "mvp": "MVP idea",
+                  "hypothesis": "Hypothesis statement",
+                  "landing_headline": "Headline for landing page",
+                  "cta": "Call to action"
+                }}
+              ]
+            }}
+            
+            Articles:
+            {combined_text}
+            """
+            response = await self.ollama.generate(retry_prompt, "Return only valid JSON.")
+            result = self._try_parse_response(response)
+        
+        return result
+
+    def _try_parse_response(self, text: str) -> Dict[str, Any]:
+        """Спроба розпарсити відповідь з підтримкою різних форматів."""
+        if not text:
+            return {"error": "Empty response from LLM"}
+        
+        # Спроба 1: прямий JSON
+        try:
+            data = json.loads(text)
+            if "problems" in data:
+                logger.info("✅ JSON parsed successfully")
+                return data
+        except json.JSONDecodeError:
+            pass
+        
+        # Спроба 2: пошук JSON-блоку
+        json_match = re.search(r'\{.*\n?\s*"problems".*\}', text, re.DOTALL)
+        if json_match:
             try:
-                result = json.loads(response)
-                return result
+                data = json.loads(json_match.group())
+                logger.info("✅ JSON extracted from text")
+                return data
             except json.JSONDecodeError:
-                logger.warning("LLM response not valid JSON, returning raw text")
-                return {"raw": response}
-        return {"error": "No response from Ollama"}
+                pass
+        
+        # Спроба 3: резервний парсинг
+        logger.info("Falling back to regex parsing")
+        parsed = self._fallback_parse(text)
+        if parsed:
+            return parsed
+        
+        # Якщо нічого не спрацювало
+        logger.warning("Could not parse LLM response")
+        return {"raw": text, "error": "Parsing failed"}
+
+    def _fallback_parse(self, text: str) -> Optional[Dict[str, Any]]:
+        """Резервний парсинг через регулярні вирази."""
+        problems = []
+        # Шукаємо блоки, які починаються з "Problem:" або "1.", "2." тощо
+        # Спрощений підхід: шукаємо ключові слова
+        problem_blocks = re.split(r'(?:\d+\.\s*|Problem:?\s*)', text)
+        for block in problem_blocks:
+            if not block.strip():
+                continue
+            # Шукаємо поля
+            desc_match = re.search(r'(?:description|problem|issue)[\s:]+(.+?)(?=\s*(?:mvp|hypothesis|landing|cta|$))', block, re.IGNORECASE)
+            mvp_match = re.search(r'(?:mvp|solution)[\s:]+(.+?)(?=\s*(?:hypothesis|landing|cta|$))', block, re.IGNORECASE)
+            hypo_match = re.search(r'(?:hypothesis|test)[\s:]+(.+?)(?=\s*(?:landing|cta|$))', block, re.IGNORECASE)
+            head_match = re.search(r'(?:landing headline|headline)[\s:]+(.+?)(?=\s*(?:cta|$))', block, re.IGNORECASE)
+            cta_match = re.search(r'(?:cta|call to action)[\s:]+(.+?)(?=\s*$)', block, re.IGNORECASE)
+            
+            if desc_match or mvp_match or hypo_match:
+                problems.append({
+                    "description": desc_match.group(1).strip() if desc_match else "Not found",
+                    "mvp": mvp_match.group(1).strip() if mvp_match else "Not found",
+                    "hypothesis": hypo_match.group(1).strip() if hypo_match else "Not found",
+                    "landing_headline": head_match.group(1).strip() if head_match else "Not found",
+                    "cta": cta_match.group(1).strip() if cta_match else "Not found"
+                })
+        
+        if problems:
+            logger.info(f"✅ Fallback parsing found {len(problems)} problems")
+            return {"problems": problems}
+        return None
