@@ -442,3 +442,8 @@ async def get_scan_status():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
+@app.get("/", response_class=HTMLResponse)
+async def landing():
+    with open("src/templates/landing_page.html", "r", encoding="utf-8") as f:
+        return HTMLResponse(content=f.read())

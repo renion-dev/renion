@@ -1,19 +1,20 @@
 import aiosqlite
 import json
+from datetime import datetime
 from typing import Optional, Dict, Any
 from src.domain.object import AionObject
 from src.domain.event import Event
 from src.domain.payment import Payment, Invoice
+from src.domain.scan_job import ScanJob
 
 class Storage:
-    """Сховище об'єктів, подій, платежів та інвойсів на основі SQLite."""
+    """Сховище об'єктів, подій, платежів, інвойсів та сканувань."""
     
     def __init__(self, db_path: str = "aion.db"):
         self.db_path = db_path
         self.conn = None
 
     async def init(self):
-        """Ініціалізує базу даних: створює всі таблиці."""
         if self.conn is None:
             self.conn = await aiosqlite.connect(self.db_path)
         
@@ -57,19 +58,6 @@ class Storage:
         """)
         await self.conn.execute("""
             CREATE TABLE IF NOT EXISTS invoices (
-        await self.conn.execute("""
-            CREATE TABLE IF NOT EXISTS scan_jobs (
-                id TEXT PRIMARY KEY,
-                status TEXT,
-                started_at TEXT,
-                completed_at TEXT,
-                hypotheses_count INTEGER,
-                error TEXT,
-                metadata TEXT,
-                created_at TEXT,
-                updated_at TEXT
-            )
-        """)
                 id TEXT PRIMARY KEY,
                 object_id TEXT,
                 amount REAL,
@@ -84,8 +72,22 @@ class Storage:
                 updated_at TEXT
             )
         """)
+        await self.conn.execute("""
+            CREATE TABLE IF NOT EXISTS scan_jobs (
+                id TEXT PRIMARY KEY,
+                status TEXT,
+                started_at TEXT,
+                completed_at TEXT,
+                hypotheses_count INTEGER,
+                error TEXT,
+                metadata TEXT,
+                created_at TEXT,
+                updated_at TEXT
+            )
+        """)
         await self.conn.commit()
 
+    # ----- Робота з об'єктами -----
     async def save_object(self, obj: AionObject):
         if self.conn is None:
             raise RuntimeError("Storage not initialized. Call init() first.")
@@ -149,6 +151,7 @@ class Storage:
                 "telemetry": json.loads(row[9])
             }
 
+    # ----- Робота з подіями -----
     async def save_event(self, event: Event):
         if self.conn is None:
             raise RuntimeError("Storage not initialized. Call init() first.")
@@ -164,6 +167,7 @@ class Storage:
         )
         await self.conn.commit()
 
+    # ----- Робота з платежами -----
     async def save_payment(self, payment: Payment) -> None:
         if self.conn is None:
             raise RuntimeError("Storage not initialized. Call init() first.")
@@ -202,6 +206,36 @@ class Storage:
                 "completed_at": row[9]
             }
 
+    async def get_payment_by_provider_reference(self, provider_reference: str) -> Optional[Dict[str, Any]]:
+        if self.conn is None:
+            raise RuntimeError("Storage not initialized. Call init() first.")
+        async with self.conn.execute("SELECT * FROM payments WHERE provider_reference=?", (provider_reference,)) as cursor:
+            row = await cursor.fetchone()
+            if row is None:
+                return None
+            return {
+                "id": row[0],
+                "amount": row[1],
+                "currency": row[2],
+                "status": row[3],
+                "method": row[4],
+                "provider_reference": row[5],
+                "metadata": json.loads(row[6]),
+                "created_at": row[7],
+                "updated_at": row[8],
+                "completed_at": row[9]
+            }
+
+    async def update_payment_status(self, payment_id: str, status: str, completed_at: Optional[str] = None) -> None:
+        if self.conn is None:
+            raise RuntimeError("Storage not initialized. Call init() first.")
+        await self.conn.execute(
+            "UPDATE payments SET status=?, updated_at=?, completed_at=? WHERE id=?",
+            (status, datetime.utcnow().isoformat(), completed_at, payment_id)
+        )
+        await self.conn.commit()
+
+    # ----- Робота з інвойсами -----
     async def save_invoice(self, invoice: Invoice) -> None:
         if self.conn is None:
             raise RuntimeError("Storage not initialized. Call init() first.")
@@ -244,56 +278,19 @@ class Storage:
                 "updated_at": row[11]
             }
 
-    async def close(self):
-        if self.conn:
-            await self.conn.close()
-            self.conn = None
-
-    async def get_payment_by_provider_reference(self, provider_reference: str) -> Optional[Dict[str, Any]]:
-        """Отримує платіж за provider_reference (id Stripe PaymentIntent)."""
-        if self.conn is None:
-            raise RuntimeError("Storage not initialized")
-        async with self.conn.execute("SELECT * FROM payments WHERE provider_reference=?", (provider_reference,)) as cursor:
-            row = await cursor.fetchone()
-            if row is None:
-                return None
-            return {
-                "id": row[0],
-                "amount": row[1],
-                "currency": row[2],
-                "status": row[3],
-                "method": row[4],
-                "provider_reference": row[5],
-                "metadata": json.loads(row[6]),
-                "created_at": row[7],
-                "updated_at": row[8],
-                "completed_at": row[9]
-            }
-
-    async def update_payment_status(self, payment_id: str, status: str, completed_at: Optional[str] = None) -> None:
-        """Оновлює статус платежу."""
-        if self.conn is None:
-            raise RuntimeError("Storage not initialized")
-        await self.conn.execute(
-            "UPDATE payments SET status=?, updated_at=?, completed_at=? WHERE id=?",
-            (status, datetime.utcnow().isoformat(), completed_at, payment_id)
-        )
-        await self.conn.commit()
-
     async def update_invoice_status(self, invoice_id: str, status: str, payment_id: Optional[str] = None, paid_at: Optional[str] = None) -> None:
-        """Оновлює статус інвойсу."""
         if self.conn is None:
-            raise RuntimeError("Storage not initialized")
+            raise RuntimeError("Storage not initialized. Call init() first.")
         await self.conn.execute(
             "UPDATE invoices SET status=?, updated_at=?, paid_at=?, payment_id=? WHERE id=?",
             (status, datetime.utcnow().isoformat(), paid_at, payment_id, invoice_id)
         )
         await self.conn.commit()
 
+    # ----- Робота зі скануваннями -----
     async def save_scan_job(self, job: ScanJob) -> None:
-        """Зберігає стан сканування."""
         if self.conn is None:
-            raise RuntimeError("Storage not initialized")
+            raise RuntimeError("Storage not initialized. Call init() first.")
         await self.conn.execute(
             """INSERT OR REPLACE INTO scan_jobs
                (id, status, started_at, completed_at, hypotheses_count, error, metadata, created_at, updated_at)
@@ -312,9 +309,8 @@ class Storage:
         await self.conn.commit()
 
     async def get_latest_scan_job(self) -> Optional[Dict[str, Any]]:
-        """Отримує останній запис сканування."""
         if self.conn is None:
-            raise RuntimeError("Storage not initialized")
+            raise RuntimeError("Storage not initialized. Call init() first.")
         async with self.conn.execute("SELECT * FROM scan_jobs ORDER BY created_at DESC LIMIT 1") as cursor:
             row = await cursor.fetchone()
             if row is None:
@@ -330,3 +326,9 @@ class Storage:
                 "created_at": row[7],
                 "updated_at": row[8]
             }
+
+    # ----- Закриття -----
+    async def close(self):
+        if self.conn:
+            await self.conn.close()
+            self.conn = None

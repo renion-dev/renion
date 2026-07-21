@@ -6,6 +6,8 @@ from src.infrastructure.llm.ollama_client import OllamaClient
 from src.application.opportunity_hunter import OpportunityHunter
 from src.application.handlers import log_opportunity, generate_landing_for_hypothesis
 from src.application.analyzer import OpportunityAnalyzer
+from src.application.clustering import HypothesisClusterer
+from src.application.market_estimator import MarketEstimator
 from src.application.landing_generator import LandingGenerator
 from src.application.advertising import AdvertisingManager
 from src.application.social_post_manager import SocialPostManager
