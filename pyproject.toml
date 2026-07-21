@@ -26,3 +26,4 @@ asyncio_mode = "auto"
     "jinja2>=3.1.0",
     "stripe>=7.0.0",
     "python-dotenv>=1.0.0",
+    "tweepy>=4.14.0",
