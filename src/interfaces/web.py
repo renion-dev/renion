@@ -1,12 +1,18 @@
 import os
 import json
+import logging
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
+from dotenv import load_dotenv
 from src.infrastructure.storage import Storage
 from src.domain.payment import Invoice
 from src.application.use_cases.payment_processor import PaymentProcessor
-from src.infrastructure.payment.simulated_provider import SimulatedProvider
+
+# Завантаження змінних середовища
+load_dotenv()
+
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="AION Opportunity Hunter", version="0.1.0")
 
@@ -15,8 +21,26 @@ storage = Storage("aion.db")
 if os.path.exists("landings"):
     app.mount("/landings", StaticFiles(directory="landings"), name="landings")
 
-# Ініціалізація платіжного процесора
-payment_provider = SimulatedProvider()
+# Вибір платіжного провайдера
+provider_type = os.getenv("PAYMENT_PROVIDER", "simulated")
+logger.info(f"Payment provider: {provider_type}")
+
+if provider_type == "stripe":
+    try:
+        from src.infrastructure.payment.stripe_provider import StripeProvider
+        payment_provider = StripeProvider()
+        logger.info("✅ StripeProvider initialized")
+    except Exception as e:
+        logger.error(f"Failed to initialize StripeProvider: {e}")
+        # Fallback на SimulatedProvider
+        from src.infrastructure.payment.simulated_provider import SimulatedProvider
+        payment_provider = SimulatedProvider()
+        logger.warning("⚠️ Falling back to SimulatedProvider")
+else:
+    from src.infrastructure.payment.simulated_provider import SimulatedProvider
+    payment_provider = SimulatedProvider()
+    logger.info("✅ SimulatedProvider initialized")
+
 payment_processor = PaymentProcessor(storage, payment_provider)
 
 @app.on_event("startup")
