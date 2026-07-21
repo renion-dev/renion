@@ -8,6 +8,8 @@ from src.application.handlers import log_opportunity, generate_landing_for_hypot
 from src.application.analyzer import OpportunityAnalyzer
 from src.application.landing_generator import LandingGenerator
 from src.application.advertising import AdvertisingManager
+from src.application.social_post_manager import SocialPostManager
+from src.infrastructure.social.twitter_poster import TwitterPoster
 from src.config import RSS_SOURCES, GITHUB_REPOS, JOB_RSS_SOURCES
 
 logging.basicConfig(
@@ -35,6 +37,10 @@ async def main():
     generator = LandingGenerator(ollama)
     advertiser = AdvertisingManager(storage, event_bus)
     
+    # Соціальні постери
+    twitter_poster = TwitterPoster()
+    social_manager = SocialPostManager(storage, [twitter_poster])
+    
     async def landing_handler(event):
         await generate_landing_for_hypothesis(event, generator)
     
@@ -42,10 +48,20 @@ async def main():
         if event.type == "hypothesis_generated":
             hypothesis_id = event.object_id
             hypothesis_data = event.payload
+            # Додаємо URL лендингу до даних
+            hypothesis_data["landing_url"] = f"/landings/{hypothesis_id}.html"
             await advertiser.launch_campaign(hypothesis_id, hypothesis_data)
+    
+    async def social_handler(event):
+        if event.type == "hypothesis_generated":
+            hypothesis_id = event.object_id
+            hypothesis_data = event.payload
+            hypothesis_data["landing_url"] = f"/landings/{hypothesis_id}.html"
+            await social_manager.post_hypothesis(hypothesis_id, hypothesis_data)
     
     event_bus.subscribe("hypothesis_generated", landing_handler)
     event_bus.subscribe("hypothesis_generated", ad_handler)
+    event_bus.subscribe("hypothesis_generated", social_handler)
     
     asyncio.create_task(event_bus.run())
     
