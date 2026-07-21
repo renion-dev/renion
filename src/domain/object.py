@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional
 
 @dataclass
 class AionObject:
-    """Універсальний об'єкт AION."""
+    """Універсальний об'єкт RENION."""
     
     # Обов'язкове поле — тип об'єкта
     type: str

@@ -4,7 +4,7 @@ from typing import Any, Dict, Optional
 
 @dataclass
 class Event:
-    """Подія AION — фіксує будь-яку зміну стану."""
+    """Подія RENION — фіксує будь-яку зміну стану."""
     
     # Унікальний ідентифікатор події
     id: str

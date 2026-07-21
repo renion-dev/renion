@@ -37,22 +37,18 @@ class PaymentProcessor:
         else:
             # Якщо платіж ще не завершено (наприклад, очікується підтвердження)
             invoice.status = "sent"  # проміжний статус
+        
+        # Зберігаємо інвойс
         await self._save_invoice(invoice)
         
         return payment
     
-    async def get_invoice_by_object(self, object_id: str) -> Optional[Invoice]:
-        """Отримує інвойс за ID об'єкта (наприклад, гіпотези)."""
-        # Тут треба зробити запит до БД (метод get_object_by_metadata)
-        # Поки що повертаємо None — реалізуємо в наступному кроці
-        return None
-    
     async def _save_payment(self, payment: Payment):
         """Зберігає платіж у БД."""
-        # Треба додати метод у Storage
-        pass
+        await self.storage.save_payment(payment)
+        logger.info(f"💾 Payment {payment.id} saved")
     
     async def _save_invoice(self, invoice: Invoice):
         """Зберігає інвойс у БД."""
-        # Треба додати метод у Storage
-        pass
+        await self.storage.save_invoice(invoice)
+        logger.info(f"💾 Invoice {invoice.id} saved")

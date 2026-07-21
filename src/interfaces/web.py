@@ -18,7 +18,7 @@ load_dotenv()
 
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="AION Opportunity Hunter", version="0.1.0")
+app = FastAPI(title="RENION Opportunity Hunter", version="0.1.0")
 
 storage = Storage("aion.db")
 
@@ -67,7 +67,7 @@ async def list_hypotheses():
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>AION — Opportunity Hunter</title>
+        <title>RENION — Opportunity Hunter</title>
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
         <style>
             * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -150,7 +150,7 @@ async def view_hypothesis(hypothesis_id: str):
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Hypothesis — AION</title>
+        <title>Hypothesis — RENION</title>
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
         <style>
             * {{ margin: 0; padding: 0; box-sizing: border-box; }}

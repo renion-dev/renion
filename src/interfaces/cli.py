@@ -9,6 +9,8 @@ from src.application.analyzer import OpportunityAnalyzer
 from src.application.landing_generator import LandingGenerator
 from src.application.advertising import AdvertisingManager
 from src.application.social_post_manager import SocialPostManager
+from src.application.clustering import HypothesisClusterer
+from src.application.market_estimator import MarketEstimator
 from src.infrastructure.social.twitter_poster import TwitterPoster
 from src.config import RSS_SOURCES, GITHUB_REPOS, JOB_RSS_SOURCES
 
@@ -36,8 +38,9 @@ async def main():
     analyzer = OpportunityAnalyzer(ollama)
     generator = LandingGenerator(ollama)
     advertiser = AdvertisingManager(storage, event_bus)
+    clusterer = HypothesisClusterer()
+    market_estimator = MarketEstimator(ollama)
     
-    # Соціальні постери
     twitter_poster = TwitterPoster()
     social_manager = SocialPostManager(storage, [twitter_poster])
     
@@ -48,7 +51,6 @@ async def main():
         if event.type == "hypothesis_generated":
             hypothesis_id = event.object_id
             hypothesis_data = event.payload
-            # Додаємо URL лендингу до даних
             hypothesis_data["landing_url"] = f"/landings/{hypothesis_id}.html"
             await advertiser.launch_campaign(hypothesis_id, hypothesis_data)
     
@@ -65,7 +67,10 @@ async def main():
     
     asyncio.create_task(event_bus.run())
     
-    hunter = OpportunityHunter(storage, event_bus, RSS_SOURCES, GITHUB_REPOS, JOB_RSS_SOURCES, analyzer)
+    hunter = OpportunityHunter(
+        storage, event_bus, RSS_SOURCES, GITHUB_REPOS, JOB_RSS_SOURCES,
+        analyzer, clusterer, market_estimator
+    )
     await hunter.scan()
     
     await event_bus.queue.join()
