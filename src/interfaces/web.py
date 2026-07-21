@@ -4,6 +4,9 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from src.infrastructure.storage import Storage
+from src.domain.payment import Invoice
+from src.application.use_cases.payment_processor import PaymentProcessor
+from src.infrastructure.payment.simulated_provider import SimulatedProvider
 
 app = FastAPI(title="AION Opportunity Hunter", version="0.1.0")
 
@@ -12,13 +15,16 @@ storage = Storage("aion.db")
 if os.path.exists("landings"):
     app.mount("/landings", StaticFiles(directory="landings"), name="landings")
 
+# Ініціалізація платіжного процесора
+payment_provider = SimulatedProvider()
+payment_processor = PaymentProcessor(storage, payment_provider)
+
 @app.on_event("startup")
 async def startup():
     await storage.init()
 
 @app.get("/", response_class=HTMLResponse)
 async def list_hypotheses():
-    """Список гіпотез у вигляді HTML-таблиці."""
     if storage.conn is None:
         await storage.init()
     
@@ -104,7 +110,6 @@ async def list_hypotheses():
 
 @app.get("/hypothesis/{hypothesis_id}", response_class=HTMLResponse)
 async def view_hypothesis(hypothesis_id: str):
-    """Гарна сторінка з деталями гіпотези."""
     obj = await storage.get_object(hypothesis_id)
     if not obj or obj["type"] != "Hypothesis":
         raise HTTPException(status_code=404, detail="Hypothesis not found")
@@ -195,6 +200,56 @@ async def view_landing(hypothesis_id: str):
     if not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="Landing page not found")
     return FileResponse(file_path)
+
+@app.post("/api/pay/{hypothesis_id}")
+async def process_payment(hypothesis_id: str):
+    """Створює платіж для гіпотези."""
+    if storage.conn is None:
+        await storage.init()
+    
+    cursor = await storage.conn.execute(
+        "SELECT * FROM invoices WHERE object_id=? AND status='draft'",
+        (hypothesis_id,)
+    )
+    row = await cursor.fetchone()
+    if not row:
+        invoice = Invoice(
+            object_id=hypothesis_id,
+            amount=99.00,
+            currency="USD",
+            description=f"Validation payment for hypothesis {hypothesis_id}",
+            status="draft"
+        )
+        await storage.save_invoice(invoice)
+    else:
+        invoice = Invoice(
+            object_id=row[1],
+            amount=row[2],
+            currency=row[3],
+            id=row[0],
+            status=row[4],
+            due_date=row[5],
+            paid_at=row[6],
+            payment_id=row[7],
+            description=row[8],
+            metadata=json.loads(row[9]),
+            created_at=row[10],
+            updated_at=row[11]
+        )
+    
+    payment = await payment_processor.process_invoice(invoice)
+    if payment and payment.status == "completed":
+        return HTMLResponse("""
+            <h1>✅ Payment Successful!</h1>
+            <p>Thank you for your payment. You now have full access.</p>
+            <a href="/">Back to home</a>
+        """)
+    else:
+        return HTMLResponse("""
+            <h1>⏳ Payment Pending</h1>
+            <p>Your payment is being processed. You will receive a confirmation shortly.</p>
+            <a href="/">Back to home</a>
+        """)
 
 if __name__ == "__main__":
     import uvicorn

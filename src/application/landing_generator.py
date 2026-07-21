@@ -13,24 +13,20 @@ class LandingGenerator:
         self.output_dir = output_dir
         os.makedirs(output_dir, exist_ok=True)
         
-        # Завантажуємо шаблон
         template_path = os.path.join(os.path.dirname(__file__), "..", "templates", "landing_template.html")
         with open(template_path, "r", encoding="utf-8") as f:
             self.template = f.read()
 
     async def generate(self, hypothesis_id: str, hypothesis_data: Dict[str, Any]) -> str:
-        """Генерує лендинг, заповнюючи шаблон даними."""
-        
         problem = hypothesis_data.get("description", "Unknown problem")
         mvp = hypothesis_data.get("mvp", "MVP not specified")
         headline = hypothesis_data.get("landing_headline", "New Solution for Your Problem")
         cta = hypothesis_data.get("cta", "Get Started")
         
-        # Генеруємо 3 фічі за допомогою LLM
         features_html = await self._generate_features(problem, mvp)
         
-        # Заповнюємо шаблон
         html = self.template
+        html = html.replace("{{HYPOTHESIS_ID}}", hypothesis_id)
         html = html.replace("{{HEADLINE}}", headline)
         html = html.replace("{{PROBLEM_DESC}}", problem[:200] + "..." if len(problem) > 200 else problem)
         html = html.replace("{{PROBLEM}}", problem)
@@ -47,7 +43,6 @@ class LandingGenerator:
         return filename
 
     async def _generate_features(self, problem: str, mvp: str) -> str:
-        """Генерує 3 фічі для лендингу через LLM."""
         prompt = f"""
         Generate 3 key features/benefits for a product that solves this problem: "{problem}"
         The solution is: "{mvp}"
@@ -68,7 +63,6 @@ class LandingGenerator:
         if response and "<div class=\"card feature\">" in response:
             return response
         else:
-            # Fallback фічі
             return """
             <div class="card feature">
                 <div class="icon">🧩</div>
