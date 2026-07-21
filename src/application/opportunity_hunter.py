@@ -1,7 +1,11 @@
 import uuid
+import logging
+from typing import List
 from src.domain.object import AionObject
 from src.domain.event import Event
 from src.infrastructure.external.rss_reader import read_rss
+
+logger = logging.getLogger(__name__)
 
 class OpportunityHunter:
     """
@@ -9,7 +13,7 @@ class OpportunityHunter:
     Сканує RSS-стрічки, створює об'єкти Opportunity та публікує події.
     """
     
-    def __init__(self, storage, event_bus, rss_urls):
+    def __init__(self, storage, event_bus, rss_urls: List[str]):
         self.storage = storage
         self.event_bus = event_bus
         self.rss_urls = rss_urls
@@ -17,16 +21,21 @@ class OpportunityHunter:
     async def scan(self):
         """Запускає сканування всіх RSS-джерел."""
         for url in self.rss_urls:
+            logger.info(f"Scanning {url}")
             items = await read_rss(url)
+            logger.info(f"Found {len(items)} items from {url}")
+            
             for item in items:
-                # Створюємо об'єкт Opportunity
+                # Перевіряємо, чи вже є такий об'єкт (за посиланням)
+                # Поки просто створюємо новий, у майбутньому додамо дедуплікацію
                 obj = AionObject(
                     type="Opportunity",
                     metadata={
                         "title": item.get("title"),
                         "link": item.get("link"),
                         "summary": item.get("summary"),
-                        "source": url,
+                        "published": item.get("published"),
+                        "source": item.get("source"),
                     }
                 )
                 await self.storage.save_object(obj)
