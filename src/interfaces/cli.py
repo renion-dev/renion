@@ -7,6 +7,7 @@ from src.application.opportunity_hunter import OpportunityHunter
 from src.application.handlers import log_opportunity, generate_landing_for_hypothesis
 from src.application.analyzer import OpportunityAnalyzer
 from src.application.landing_generator import LandingGenerator
+from src.application.advertising import AdvertisingManager
 from src.config import RSS_SOURCES
 
 logging.basicConfig(
@@ -32,18 +33,25 @@ async def main():
     
     analyzer = OpportunityAnalyzer(ollama)
     generator = LandingGenerator(ollama)
+    advertiser = AdvertisingManager(storage, event_bus)
     
     async def landing_handler(event):
         await generate_landing_for_hypothesis(event, generator)
     
+    async def ad_handler(event):
+        if event.type == "hypothesis_generated":
+            hypothesis_id = event.object_id
+            hypothesis_data = event.payload
+            await advertiser.launch_campaign(hypothesis_id, hypothesis_data)
+    
     event_bus.subscribe("hypothesis_generated", landing_handler)
+    event_bus.subscribe("hypothesis_generated", ad_handler)
     
     asyncio.create_task(event_bus.run())
     
     hunter = OpportunityHunter(storage, event_bus, RSS_SOURCES, analyzer)
     await hunter.scan()
     
-    # Чекаємо завершення обробки всіх подій (включно з генерацією лендингів)
     await event_bus.queue.join()
     
     print("✅ Scan and analysis complete. Objects saved in aion.db")
