@@ -3,28 +3,28 @@ import json
 import asyncio
 import logging
 from datetime import datetime
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
 from dotenv import load_dotenv
 from src.infrastructure.storage import Storage
 from src.domain.payment import Invoice
 from src.application.use_cases.payment_processor import PaymentProcessor
-from src.application.handlers import log_opportunity, generate_landing_for_hypothesis
+from src.infrastructure.event_bus import EventBus
+from src.infrastructure.llm.ollama_client import OllamaClient
+from src.application.opportunity_hunter import OpportunityHunter
+from src.application.analyzer import OpportunityAnalyzer
+from src.application.clustering import HypothesisClusterer
+from src.application.market_estimator import MarketEstimator
+from src.application.handlers import generate_landing_for_hypothesis, log_opportunity
+from src.application.landing_generator import LandingGenerator
 from src.application.advertising import AdvertisingManager
 from src.application.social_post_manager import SocialPostManager
 from src.infrastructure.social.twitter_poster import TwitterPoster
 from src.infrastructure.social.reddit_poster import RedditPoster
 from src.infrastructure.social.hackernews_poster import HackerNewsPoster
 from src.infrastructure.social.medium_poster import MediumPoster
-from src.application.handlers import log_opportunity, generate_landing_for_hypothesis
-from src.application.advertising import AdvertisingManager
-from src.application.social_post_manager import SocialPostManager
-from src.infrastructure.social.twitter_poster import TwitterPoster
-from src.infrastructure.social.reddit_poster import RedditPoster
-from src.infrastructure.social.hackernews_poster import HackerNewsPoster
-from src.infrastructure.social.medium_poster import MediumPoster
+from src.config import RSS_SOURCES, GITHUB_REPOS, JOB_RSS_SOURCES
 
 load_dotenv()
 
@@ -37,10 +37,6 @@ storage = Storage("aion.db")
 if os.path.exists("landings"):
     app.mount("/landings", StaticFiles(directory="landings"), name="landings")
 
-# Шаблони
-templates = Jinja2Templates(directory="src/templates")
-
-# Вибір платіжного провайдера
 provider_type = os.getenv("PAYMENT_PROVIDER", "simulated")
 logger.info(f"Payment provider: {provider_type}")
 
@@ -67,14 +63,11 @@ _scan_task = None
 async def startup():
     await storage.init()
 
-# --- Лендинг ---
 @app.get("/", response_class=HTMLResponse)
 async def landing():
-    """Презентаційна сторінка RENION."""
     with open("src/templates/landing_page.html", "r", encoding="utf-8") as f:
         return HTMLResponse(content=f.read())
 
-# --- Список гіпотез ---
 @app.get("/hypotheses", response_class=HTMLResponse)
 async def list_hypotheses():
     if storage.conn is None:
@@ -136,7 +129,7 @@ async def list_hypotheses():
                 <div class="stat"><span>With Landing</span><strong>""" + str(sum(1 for r in rows if os.path.exists(f"landings/{r[0]}.html"))) + """</strong></div>
             </div>
             <div class="scan-bar">
-                <button id="scanBtn" class="btn-primary">🚀 Запустити сканування</button>
+                <button id="scanBtn" class="btn-primary">🚀 Run Scan</button>
                 <span id="scanStatus" style="color: #b0b0c8; font-size: 0.9rem;">Status: <span id="statusText">not started</span></span>
                 <span id="scanResult" style="color: #b0b0c8; font-size: 0.9rem;"></span>
             </div>
@@ -177,20 +170,20 @@ async def list_hypotheses():
                 async function startScan() {
                     const scanBtn = document.getElementById('scanBtn');
                     scanBtn.disabled = true;
-                    scanBtn.textContent = '⏳ Запуск...';
+                    scanBtn.textContent = '⏳ Starting...';
                     try {
                         const resp = await fetch('/api/scan', { method: 'POST' });
                         const data = await resp.json();
                         if (data.status === 'started') {
-                            document.getElementById('statusText').textContent = '🔄 запущено...';
+                            document.getElementById('statusText').textContent = '🔄 started...';
                         } else if (data.status === 'already_running') {
-                            document.getElementById('statusText').textContent = '⏳ вже running';
+                            document.getElementById('statusText').textContent = '⏳ already running';
                         }
                     } catch (e) {
                         console.error('Start scan error:', e);
-                        document.getElementById('statusText').textContent = '❌ error запуску';
+                        document.getElementById('statusText').textContent = '❌ start error';
                     }
-                    scanBtn.textContent = '🚀 Запустити сканування';
+                    scanBtn.textContent = '🚀 Run Scan';
                     scanBtn.disabled = false;
                     setTimeout(updateStatus, 1000);
                 }
@@ -239,7 +232,6 @@ async def list_hypotheses():
     """
     return HTMLResponse(content=html)
 
-# --- Інші маршрути ---
 @app.get("/hypothesis/{hypothesis_id}", response_class=HTMLResponse)
 async def view_hypothesis(hypothesis_id: str):
     obj = await storage.get_object(hypothesis_id)
@@ -387,7 +379,71 @@ async def process_payment(hypothesis_id: str):
             <a href="/hypotheses">Back to hypotheses</a>
         """)
 
-# --- API для запуску сканування ---
+# --- Scan API ---
+_scan_task = None
+
+async def run_scan_impl(storage: Storage):
+    """Реалізація сканування (така ж, як у CLI)."""
+    event_bus = EventBus(storage)
+    event_bus.subscribe("opportunity_created", log_opportunity)
+    event_bus.subscribe("hypothesis_generated", log_opportunity)
+    
+    ollama = OllamaClient()
+    available = await ollama.is_available()
+    if not available:
+        logger.warning("⚠️ Ollama not available. Please start Ollama and install model llama3:latest")
+    else:
+        logger.info("✅ Ollama available")
+    
+    analyzer = OpportunityAnalyzer(ollama)
+    generator = LandingGenerator(ollama)
+    advertiser = AdvertisingManager(storage, event_bus)
+    clusterer = HypothesisClusterer()
+    market_estimator = MarketEstimator(ollama)
+    
+    twitter_poster = TwitterPoster()
+    reddit_poster = RedditPoster()
+    hackernews_poster = HackerNewsPoster()
+    medium_poster = MediumPoster()
+    social_manager = SocialPostManager(storage, [
+        twitter_poster,
+        reddit_poster,
+        hackernews_poster,
+        medium_poster
+    ])
+    
+    async def landing_handler(event):
+        await generate_landing_for_hypothesis(event, generator)
+    
+    async def ad_handler(event):
+        if event.type == "hypothesis_generated":
+            hypothesis_id = event.object_id
+            hypothesis_data = event.payload
+            hypothesis_data["landing_url"] = f"/landings/{hypothesis_id}.html"
+            await advertiser.launch_campaign(hypothesis_id, hypothesis_data)
+    
+    async def social_handler(event):
+        if event.type == "hypothesis_generated":
+            hypothesis_id = event.object_id
+            hypothesis_data = event.payload
+            hypothesis_data["landing_url"] = f"/landings/{hypothesis_id}.html"
+            await social_manager.post_hypothesis(hypothesis_id, hypothesis_data)
+    
+    event_bus.subscribe("hypothesis_generated", landing_handler)
+    event_bus.subscribe("hypothesis_generated", ad_handler)
+    event_bus.subscribe("hypothesis_generated", social_handler)
+    
+    asyncio.create_task(event_bus.run())
+    
+    hunter = OpportunityHunter(
+        storage, event_bus, RSS_SOURCES, GITHUB_REPOS, JOB_RSS_SOURCES,
+        analyzer, clusterer, market_estimator
+    )
+    await hunter.scan()
+    
+    await event_bus.queue.join()
+    logger.info("✅ Scan completed")
+
 @app.post("/api/scan")
 async def start_scan():
     global _scan_task
@@ -401,44 +457,20 @@ async def start_scan():
     job.start()
     await storage.save_scan_job(job)
     
-    async def run_scan():
+    async def run_with_status():
         try:
-            from src.infrastructure.event_bus import EventBus
-            from src.infrastructure.llm.ollama_client import OllamaClient
-            from src.application.opportunity_hunter import OpportunityHunter
-            from src.application.analyzer import OpportunityAnalyzer
-            from src.application.clustering import HypothesisClusterer
-            from src.application.market_estimator import MarketEstimator
-            from src.config import RSS_SOURCES, GITHUB_REPOS, JOB_RSS_SOURCES
-            
-            event_bus = EventBus(storage)
-            asyncio.create_task(event_bus.run())
-            
-            ollama = OllamaClient()
-            analyzer = OpportunityAnalyzer(ollama)
-            clusterer = HypothesisClusterer()
-            market_estimator = MarketEstimator(ollama)
-            
-            hunter = OpportunityHunter(
-                storage, event_bus, RSS_SOURCES, GITHUB_REPOS, JOB_RSS_SOURCES,
-                analyzer, clusterer, market_estimator
-            )
-            await hunter.scan()
-            await event_bus.queue.join()
-            
+            await run_scan_impl(storage)
             cursor = await storage.conn.execute("SELECT COUNT(*) FROM objects WHERE type='Hypothesis'")
             count_row = await cursor.fetchone()
             hypotheses_count = count_row[0] if count_row else 0
-            
             job.complete(hypotheses_count)
             await storage.save_scan_job(job)
-            logger.info(f"✅ Scan completed: {hypotheses_count} hypotheses")
         except Exception as e:
             job.fail(str(e))
             await storage.save_scan_job(job)
             logger.error(f"❌ Scan failed: {e}")
     
-    _scan_task = asyncio.create_task(run_scan())
+    _scan_task = asyncio.create_task(run_with_status())
     return {"status": "started", "job_id": job.id}
 
 @app.get("/api/scan/status")
@@ -457,8 +489,3 @@ async def get_scan_status():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
-
-@app.get("/", response_class=HTMLResponse)
-async def landing():
-    with open("src/templates/landing_page.html", "r", encoding="utf-8") as f:
-        return HTMLResponse(content=f.read())
