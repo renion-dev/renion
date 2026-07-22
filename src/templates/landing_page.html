@@ -15,8 +15,6 @@
             overflow-x: hidden;
         }
         .container { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem; }
-
-        /* Hero */
         .hero { 
             display: flex; 
             flex-direction: column; 
@@ -109,8 +107,6 @@
             border-color: #6c6cf0;
             color: #fff;
         }
-
-        /* Sections */
         .section { margin: 4rem 0; }
         .section-title { font-size: 2.5rem; font-weight: 700; text-align: center; margin-bottom: 1rem; }
         .section-desc { text-align: center; color: #b0b0c8; max-width: 600px; margin: 0 auto 2.5rem; font-weight: 300; }
@@ -135,17 +131,12 @@
         .card .icon { font-size: 2.8rem; margin-bottom: 0.8rem; }
         .card h3 { font-size: 1.3rem; font-weight: 700; margin-bottom: 0.5rem; color: #e8e8ff; }
         .card p { color: #b0b0c8; font-weight: 300; font-size: 0.95rem; }
-
-        /* Features list */
         .features-list { display: flex; flex-direction: column; gap: 0.8rem; max-width: 700px; margin: 0 auto; }
         .feature-item { display: flex; align-items: flex-start; gap: 1rem; padding: 0.8rem 0; border-bottom: 1px solid #1a1a2a; }
         .feature-item .icon { font-size: 1.5rem; flex-shrink: 0; width: 2rem; }
         .feature-item strong { color: #f0f0ff; }
-
-        /* Footer */
         footer { text-align: center; color: #606080; padding: 2rem 0 1rem; border-top: 1px solid #1a1a2a; margin-top: 2rem; font-size: 0.9rem; font-weight: 300; }
         footer a { color: #8b8bf7; text-decoration: none; }
-
         @media (max-width: 768px) {
             .hero h1 { font-size: 2.5rem; }
             .section-title { font-size: 1.8rem; }
@@ -160,107 +151,101 @@
 <body>
     <div class="container">
 
-        <!-- HERO -->
         <section class="hero">
-            <span class="badge">🚀 v1.0.0 — MVP</span>
+            <span class="badge">🚀 v1.0.2 — Stable</span>
             <h1>RENION<br>Autonomous Intelligence Network</h1>
             <p class="sub">
-                RENION — це операційне середовище для автономних агентів.<br>
-                Opportunity Hunter — перший модуль, який знаходить ринкові можливості.
+                RENION is an operating environment for autonomous agents.<br>
+                Opportunity Hunter is the first module that finds market opportunities.
             </p>
             <div class="cta-group">
-                <a href="/hypotheses" class="btn-primary">🚀 Переглянути гіпотези</a>
-                <a href="#features" class="btn-secondary">Дізнатися більше ↓</a>
+                <a href="/hypotheses" class="btn-primary">🚀 View Hypotheses</a>
+                <a href="#features" class="btn-secondary">Learn More ↓</a>
             </div>
         </section>
 
-        <!-- ABOUT -->
         <section class="section" id="about">
-            <h2 class="section-title">Що таке RENION?</h2>
+            <h2 class="section-title">What is RENION?</h2>
             <p class="section-desc">
-                RENION — це платформа, де незалежні модулі можуть накопичувати знання, взаємодіяти,
-                приймати рішення, запускати експерименти та створювати економічну цінність.
+                RENION is a platform where independent modules can accumulate knowledge, interact,
+                make decisions, run experiments, and create economic value.
             </p>
         </section>
 
-        <!-- FEATURES -->
         <section class="section" id="features">
-            <h2 class="section-title">Що вміє Opportunity Hunter</h2>
+            <h2 class="section-title">What can Opportunity Hunter do?</h2>
             <div class="grid-3">
                 <div class="card">
                     <div class="icon">📡</div>
-                    <h3>Збір даних</h3>
-                    <p>Сканує RSS, GitHub Issues, вакансії та інші джерела.</p>
+                    <h3>Data Collection</h3>
+                    <p>Scans RSS, GitHub Issues, job postings and other sources.</p>
                 </div>
                 <div class="card">
                     <div class="icon">🧠</div>
-                    <h3>AI-аналіз</h3>
-                    <p>Використовує локальну LLM для виявлення проблем та формування гіпотез.</p>
+                    <h3>AI Analysis</h3>
+                    <p>Uses local LLM to identify problems and formulate hypotheses.</p>
                 </div>
                 <div class="card">
                     <div class="icon">📊</div>
-                    <h3>Оцінка ринку</h3>
-                    <p>Кластеризує проблеми, оцінює TAM/SAM/SOM кожній гіпотези.</p>
+                    <h3>Market Assessment</h3>
+                    <p>Clusters problems, evaluates TAM/SAM/SOM for each hypothesis.</p>
                 </div>
                 <div class="card">
                     <div class="icon">🌐</div>
-                    <h3>Лендинги</h3>
-                    <p>Автоматично генерує сучасні лендинги з кнопкою оплати.</p>
+                    <h3>Landing Pages</h3>
+                    <p>Automatically generates modern landing pages with payment button.</p>
                 </div>
                 <div class="card">
                     <div class="icon">💰</div>
-                    <h3>Економічний шар</h3>
-                    <p>Інвойси, платежі, абстракція провайдера (Stripe готовий).</p>
+                    <h3>Economic Layer</h3>
+                    <p>Invoices, payments, provider abstraction (Stripe ready).</p>
                 </div>
                 <div class="card">
                     <div class="icon">🐦</div>
-                    <h3>Соціальний постинг</h3>
-                    <p>Автоматична публікація гіпотез у Twitter (dry-run або реальний).</p>
+                    <h3>Social Posting</h3>
+                    <p>Automatically publishes hypotheses to Twitter (dry-run or real).</p>
                 </div>
             </div>
         </section>
 
-        <!-- HOW IT WORKS -->
         <section class="section" id="how">
-            <h2 class="section-title">Як це працює</h2>
+            <h2 class="section-title">How It Works</h2>
             <div class="features-list">
                 <div class="feature-item">
                     <span class="icon">1️⃣</span>
-                    <div><strong>Збір даних</strong> — Opportunity Hunter сканує 12+ джерел (Hacker News, Reddit, GitHub Issues, вакансії).</div>
+                    <div><strong>Data Collection</strong> — Opportunity Hunter scans 12+ sources (Hacker News, Reddit, GitHub Issues, jobs).</div>
                 </div>
                 <div class="feature-item">
                     <span class="icon">2️⃣</span>
-                    <div><strong>Аналіз через LLM</strong> — локальна модель (Ollama) виявляє повторювані проблеми та формує гіпотези.</div>
+                    <div><strong>LLM Analysis</strong> — Local model (Ollama) identifies recurring problems and formulates hypotheses.</div>
                 </div>
                 <div class="feature-item">
                     <span class="icon">3️⃣</span>
-                    <div><strong>Кластеризація та оцінка</strong> — схожі проблеми групуються, для кожної гіпотези оцінюється TAM/SAM/SOM.</div>
+                    <div><strong>Clustering & Assessment</strong> — Similar problems are grouped, TAM/SAM/SOM is estimated for each hypothesis.</div>
                 </div>
                 <div class="feature-item">
                     <span class="icon">4️⃣</span>
-                    <div><strong>Генерація лендингу</strong> — для гіпотези створюється сучасний лендинг з кнопкою оплати.</div>
+                    <div><strong>Landing Generation</strong> — A modern landing page with payment button is created for the hypothesis.</div>
                 </div>
                 <div class="feature-item">
                     <span class="icon">5️⃣</span>
-                    <div><strong>Автоматичний постинг</strong> — гіпотеза публікується в Twitter та запускається рекламна кампанія (заглушка).</div>
+                    <div><strong>Automatic Posting</strong> — Hypothesis is published to Twitter and an ad campaign is launched (stub).</div>
                 </div>
                 <div class="feature-item">
                     <span class="icon">6️⃣</span>
-                    <div><strong>Збір оплат</strong> — користувачі можуть оплатити доступ до гіпотези (SimulatedProvider або Stripe).</div>
+                    <div><strong>Payment Collection</strong> — Users can pay for access to the hypothesis (SimulatedProvider or Stripe).</div>
                 </div>
             </div>
         </section>
 
-        <!-- CTA -->
         <section class="section" style="text-align: center; padding: 2rem 0;">
-            <h2 style="font-size: 2rem; margin-bottom: 1rem;">Готові до запуску?</h2>
+            <h2 style="font-size: 2rem; margin-bottom: 1rem;">Ready to Launch?</h2>
             <p style="color: #b0b0c8; max-width: 500px; margin: 0 auto 2rem;">
-                Спробуйте Opportunity Hunter прямо зараз — перегляньте згенеровані гіпотези.
+                Try Opportunity Hunter right now — view generated hypotheses.
             </p>
-            <a href="/hypotheses" class="btn-primary">🚀 Переглянути гіпотези</a>
+            <a href="/hypotheses" class="btn-primary">🚀 View Hypotheses</a>
         </section>
 
-        <!-- FOOTER -->
         <footer>
             © 2026 <a href="#">RENION</a> — Built with ❤️ by RENE Engineering
         </footer>
