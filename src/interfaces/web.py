@@ -4,6 +4,7 @@ import asyncio
 import logging
 from datetime import datetime
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import RedirectResponse
 from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
@@ -489,3 +490,65 @@ async def get_scan_status():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
+@app.get("/api/create-checkout-session/{hypothesis_id}")
+async def create_checkout_session(hypothesis_id: str):
+    """Створює Stripe Checkout Session для гіпотези."""
+    # Отримуємо інвойс або створюємо новий
+    cursor = await storage.conn.execute(
+        "SELECT * FROM invoices WHERE object_id=? AND status='draft'",
+        (hypothesis_id,)
+    )
+    row = await cursor.fetchone()
+    if not row:
+        invoice = Invoice(
+            object_id=hypothesis_id,
+            amount=1.69,
+            currency="USD",
+            description=f"Validation payment for hypothesis {hypothesis_id}",
+            status="draft"
+        )
+        await storage.save_invoice(invoice)
+        amount = 1.69
+    else:
+        amount = row[2]
+    
+    # Використовуємо StripeProvider для створення сесії
+    provider = StripeProvider()
+    try:
+        result = await provider.create_checkout_session(hypothesis_id, amount)
+        return RedirectResponse(url=result["url"])
+    except Exception as e:
+        logger.error(f"Failed to create checkout session: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/create-checkout-session/{hypothesis_id}")
+async def create_checkout_session(hypothesis_id: str):
+    from src.infrastructure.payment.stripe_provider import StripeProvider
+    from src.domain.payment import Invoice
+    if storage.conn is None:
+        await storage.init()
+    cursor = await storage.conn.execute(
+        "SELECT * FROM invoices WHERE object_id=? AND status='draft'",
+        (hypothesis_id,)
+    )
+    row = await cursor.fetchone()
+    if not row:
+        invoice = Invoice(
+            object_id=hypothesis_id,
+            amount=1.69,
+            currency="USD",
+            description=f"Validation payment for hypothesis {hypothesis_id}",
+            status="draft"
+        )
+        await storage.save_invoice(invoice)
+        amount = 1.69
+    else:
+        amount = row[2]
+    provider = StripeProvider()
+    try:
+        result = await provider.create_checkout_session(hypothesis_id, amount)
+        return RedirectResponse(url=result["url"])
+    except Exception as e:
+        logger.error(f"Failed to create checkout session: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

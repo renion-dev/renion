@@ -368,9 +368,7 @@
             <div class="price">
                 $1.69 <span>USD</span>
             </div>
-            <form action="/api/pay/{{HYPOTHESIS_ID}}" method="POST">
-                <button type="submit" class="btn-success">💳 Pay Now with Simulated Payment</button>
-            </form>
+            <a href="/api/create-checkout-session/{{HYPOTHESIS_ID}}" class="btn-success" target="_blank" style="display:inline-block; margin-top:1rem;">💳 Pay Now with Stripe</a>
             <p class="disclaimer" style="margin-top:1rem;">🔒 Secure payment. No recurring charges.</p>
         </section>
 
