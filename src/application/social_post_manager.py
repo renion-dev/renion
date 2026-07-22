@@ -33,7 +33,7 @@ class SocialPostManager:
         
         return results
 
-    def _generate_content(self, platform: str, hypothesis_data: dict) -> str:
+    def _generate_content(self, platform: str, hypothesis_data: dict, language: str = "en") -> str:
         """Генерує текст для різних платформ."""
         headline = hypothesis_data.get("landing_headline", "New Solution")
         problem = hypothesis_data.get("description", "A problem needs solving")
