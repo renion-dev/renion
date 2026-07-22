@@ -14,6 +14,7 @@ async def log_opportunity(event: Event):
     print(f"🔍 New opportunity found: {title}")
 
 async def generate_landing_for_hypothesis(event: Event, generator: LandingGenerator):
+    print(f"🔥 LANDING HANDLER TRIGGERED for {event.object_id}")
     """Генерує лендинг для нової гіпотези."""
     if event.type != "hypothesis_generated":
         logger.info(f"Ignoring event type: {event.type}")

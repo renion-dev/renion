@@ -11,20 +11,6 @@ from dotenv import load_dotenv
 from src.infrastructure.storage import Storage
 from src.domain.payment import Invoice
 from src.application.use_cases.payment_processor import PaymentProcessor
-from src.application.handlers import log_opportunity, generate_landing_for_hypothesis
-from src.application.advertising import AdvertisingManager
-from src.application.social_post_manager import SocialPostManager
-from src.infrastructure.social.twitter_poster import TwitterPoster
-from src.infrastructure.social.reddit_poster import RedditPoster
-from src.infrastructure.social.hackernews_poster import HackerNewsPoster
-from src.infrastructure.social.medium_poster import MediumPoster
-from src.application.handlers import log_opportunity, generate_landing_for_hypothesis
-from src.application.advertising import AdvertisingManager
-from src.application.social_post_manager import SocialPostManager
-from src.infrastructure.social.twitter_poster import TwitterPoster
-from src.infrastructure.social.reddit_poster import RedditPoster
-from src.infrastructure.social.hackernews_poster import HackerNewsPoster
-from src.infrastructure.social.medium_poster import MediumPoster
 
 load_dotenv()
 
@@ -129,7 +115,7 @@ async def list_hypotheses():
                     <h1>🧠 Opportunity Hunter</h1>
                     <p class="sub">AI-generated hypotheses based on real user problems</p>
                 </div>
-                <a href="/" class="back-link">← Back to home</a>
+                <a href="/" class="back-link">← На головну</a>
             </div>
             <div class="stats">
                 <div class="stat"><span>Total</span><strong>""" + str(len(rows)) + """</strong></div>
@@ -137,7 +123,7 @@ async def list_hypotheses():
             </div>
             <div class="scan-bar">
                 <button id="scanBtn" class="btn-primary">🚀 Запустити сканування</button>
-                <span id="scanStatus" style="color: #b0b0c8; font-size: 0.9rem;">Status: <span id="statusText">not started</span></span>
+                <span id="scanStatus" style="color: #b0b0c8; font-size: 0.9rem;">Статус: <span id="statusText">не запущено</span></span>
                 <span id="scanResult" style="color: #b0b0c8; font-size: 0.9rem;"></span>
             </div>
             <script>
@@ -149,22 +135,22 @@ async def list_hypotheses():
                         const scanResult = document.getElementById('scanResult');
                         const scanBtn = document.getElementById('scanBtn');
                         if (data.status === 'running') {
-                            statusText.textContent = '🔄 running...';
+                            statusText.textContent = '🔄 виконується...';
                             scanBtn.disabled = true;
                             scanBtn.style.opacity = '0.6';
                             scanResult.textContent = '';
                         } else if (data.status === 'completed') {
-                            statusText.textContent = '✅ completed';
+                            statusText.textContent = '✅ завершено';
                             scanBtn.disabled = false;
                             scanBtn.style.opacity = '1';
-                            scanResult.textContent = `Hypotheses: ${data.hypotheses_count || 0}`;
+                            scanResult.textContent = `Гіпотез: ${data.hypotheses_count || 0}`;
                         } else if (data.status === 'failed') {
-                            statusText.textContent = '❌ error';
+                            statusText.textContent = '❌ помилка';
                             scanBtn.disabled = false;
                             scanBtn.style.opacity = '1';
-                            scanResult.textContent = `Error: ${data.error || ''}`;
+                            scanResult.textContent = `Помилка: ${data.error || ''}`;
                         } else {
-                            statusText.textContent = '⏸️ not started';
+                            statusText.textContent = '⏸️ не запущено';
                             scanBtn.disabled = false;
                             scanBtn.style.opacity = '1';
                             scanResult.textContent = '';
@@ -184,11 +170,11 @@ async def list_hypotheses():
                         if (data.status === 'started') {
                             document.getElementById('statusText').textContent = '🔄 запущено...';
                         } else if (data.status === 'already_running') {
-                            document.getElementById('statusText').textContent = '⏳ вже running';
+                            document.getElementById('statusText').textContent = '⏳ вже виконується';
                         }
                     } catch (e) {
                         console.error('Start scan error:', e);
-                        document.getElementById('statusText').textContent = '❌ error запуску';
+                        document.getElementById('statusText').textContent = '❌ помилка запуску';
                     }
                     scanBtn.textContent = '🚀 Запустити сканування';
                     scanBtn.disabled = false;
@@ -424,7 +410,6 @@ async def start_scan():
                 analyzer, clusterer, market_estimator
             )
             await hunter.scan()
-            await event_bus.queue.join()
             
             cursor = await storage.conn.execute("SELECT COUNT(*) FROM objects WHERE type='Hypothesis'")
             count_row = await cursor.fetchone()
@@ -457,8 +442,3 @@ async def get_scan_status():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
-
-@app.get("/", response_class=HTMLResponse)
-async def landing():
-    with open("src/templates/landing_page.html", "r", encoding="utf-8") as f:
-        return HTMLResponse(content=f.read())

@@ -7,8 +7,6 @@ from src.infrastructure.llm.ollama_client import OllamaClient
 logger = logging.getLogger(__name__)
 
 class OpportunityAnalyzer:
-    """Аналізує зібрані статті, виявляє проблеми та генерує гіпотези."""
-    
     def __init__(self, ollama_client: OllamaClient):
         self.ollama = ollama_client
 
@@ -37,8 +35,7 @@ class OpportunityAnalyzer:
         
         system_prompt = (
             "You are an expert business analyst and startup founder. "
-            "Your task is to find recurring problems and unmet needs from user discussions. "
-            "For each problem, propose a simple MVP solution and a hypothesis for validation."
+            "Your task is to find recurring problems and unmet needs from user discussions."
         )
         
         prompt = f"""
@@ -48,7 +45,7 @@ class OpportunityAnalyzer:
         
         Please:
         1. Identify the top 3 most common problems or unmet needs mentioned.
-        2. For each problem, suggest a minimal viable product (MVP) as a **structured list of 3-5 key features** (bullet points). Format: "MVP: \\n- Feature 1\\n- Feature 2\\n- Feature 3".
+        2. For each problem, suggest a minimal viable product (MVP) as a short, clear paragraph (1-2 sentences).
         3. For each, propose a hypothesis to test: "If we build X, then Y people will pay Z price."
         4. Suggest a simple landing page headline and call-to-action.
         
@@ -58,7 +55,7 @@ class OpportunityAnalyzer:
             {{
               "description": "Problem description",
               "frequency": "How often mentioned",
-              "mvp": "MVP: \\n- Feature 1\\n- Feature 2\\n- Feature 3",
+              "mvp": "A short description of the MVP",
               "hypothesis": "Hypothesis statement",
               "landing_headline": "Headline for landing page",
               "cta": "Call to action"
@@ -79,7 +76,7 @@ class OpportunityAnalyzer:
                 {{
                   "description": "Problem description",
                   "frequency": "How often mentioned",
-                  "mvp": "MVP: \\n- Feature 1\\n- Feature 2\\n- Feature 3",
+                  "mvp": "A short description of the MVP",
                   "hypothesis": "Hypothesis statement",
                   "landing_headline": "Headline for landing page",
                   "cta": "Call to action"
@@ -116,36 +113,5 @@ class OpportunityAnalyzer:
             except json.JSONDecodeError:
                 pass
         
-        logger.info("Falling back to regex parsing")
-        parsed = self._fallback_parse(text)
-        if parsed:
-            return parsed
-        
         logger.warning("Could not parse LLM response")
         return {"raw": text, "error": "Parsing failed"}
-
-    def _fallback_parse(self, text: str) -> Optional[Dict[str, Any]]:
-        problems = []
-        problem_blocks = re.split(r'(?:\d+\.\s*|Problem:?\s*)', text)
-        for block in problem_blocks:
-            if not block.strip():
-                continue
-            desc_match = re.search(r'(?:description|problem|issue)[\s:]+(.+?)(?=\s*(?:mvp|hypothesis|landing|cta|$))', block, re.IGNORECASE)
-            mvp_match = re.search(r'(?:mvp|solution)[\s:]+(.+?)(?=\s*(?:hypothesis|landing|cta|$))', block, re.IGNORECASE)
-            hypo_match = re.search(r'(?:hypothesis|test)[\s:]+(.+?)(?=\s*(?:landing|cta|$))', block, re.IGNORECASE)
-            head_match = re.search(r'(?:landing headline|headline)[\s:]+(.+?)(?=\s*(?:cta|$))', block, re.IGNORECASE)
-            cta_match = re.search(r'(?:cta|call to action)[\s:]+(.+?)(?=\s*$)', block, re.IGNORECASE)
-            
-            if desc_match or mvp_match or hypo_match:
-                problems.append({
-                    "description": desc_match.group(1).strip() if desc_match else "Not found",
-                    "mvp": mvp_match.group(1).strip() if mvp_match else "Not found",
-                    "hypothesis": hypo_match.group(1).strip() if hypo_match else "Not found",
-                    "landing_headline": head_match.group(1).strip() if head_match else "Not found",
-                    "cta": cta_match.group(1).strip() if cta_match else "Not found"
-                })
-        
-        if problems:
-            logger.info(f"✅ Fallback parsing found {len(problems)} problems")
-            return {"problems": problems}
-        return None
