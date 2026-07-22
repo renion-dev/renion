@@ -70,7 +70,7 @@ class OpportunityHunter:
                     if existing:
                         logger.debug(f"Skipping duplicate issue: {item.get('title')} ({link})")
                         continue
-                body = item.get("body", "")[:300]
+                body = item.get("body") or ""[:300]
                 comments = f"(Comments: {item.get('comments', 0)})"
                 summary = f"{body} {comments}" if body else comments
                 item["summary"] = summary
@@ -100,7 +100,7 @@ class OpportunityHunter:
                         continue
                 title = item.get("title", "")
                 company = item.get("company", "")
-                description = item.get("description", "")[:300]
+                description = item.get("description") or ""[:300]
                 summary = f"Job: {title} at {company}. Description: {description}"
                 item["summary"] = summary
                 all_articles.append(item)
