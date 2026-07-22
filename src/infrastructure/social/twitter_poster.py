@@ -2,8 +2,11 @@ import os
 import logging
 import tweepy
 from typing import Optional, Dict, Any
+from dotenv import load_dotenv
 from src.domain.social_post import SocialPost
 from src.domain.interfaces.social_poster import SocialPoster
+
+load_dotenv()  # Завантажуємо .env при імпорті
 
 logger = logging.getLogger(__name__)
 
@@ -11,6 +14,9 @@ class TwitterPoster(SocialPoster):
     """Реалізація публікації у Twitter через API v2."""
     
     def __init__(self):
+        # Перечитуємо змінні середовища (на випадок, якщо .env змінився)
+        load_dotenv()
+        
         self.api_key = os.getenv("TWITTER_API_KEY")
         self.api_secret = os.getenv("TWITTER_API_SECRET")
         self.access_token = os.getenv("TWITTER_ACCESS_TOKEN")
@@ -18,6 +24,8 @@ class TwitterPoster(SocialPoster):
         
         self._client = None
         self._available = False
+        
+        logger.info(f"Twitter keys: API_KEY={self.api_key[:5] if self.api_key else 'None'}..., ACCESS_TOKEN={self.access_token[:5] if self.access_token else 'None'}...")
         
         if all([self.api_key, self.api_secret, self.access_token, self.access_secret]):
             try:
@@ -36,7 +44,6 @@ class TwitterPoster(SocialPoster):
             logger.warning("⚠️ Twitter API credentials not set. Running in dry-run mode.")
 
     async def post(self, content: str, hypothesis_id: str, metadata: Optional[Dict[str, Any]] = None) -> SocialPost:
-        """Публікує пост у Twitter."""
         post = SocialPost(
             platform="twitter",
             content=content,
@@ -50,7 +57,6 @@ class TwitterPoster(SocialPoster):
             return post
         
         try:
-            # Обмеження довжини твіту
             if len(content) > 280:
                 content = content[:277] + "..."
             
@@ -69,7 +75,6 @@ class TwitterPoster(SocialPoster):
         return post
 
     async def get_post_status(self, post_id: str) -> str:
-        """Отримує статус поста за ID."""
         if not self._available:
             return "unknown"
         try:
