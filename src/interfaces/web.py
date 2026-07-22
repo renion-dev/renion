@@ -11,6 +11,20 @@ from dotenv import load_dotenv
 from src.infrastructure.storage import Storage
 from src.domain.payment import Invoice
 from src.application.use_cases.payment_processor import PaymentProcessor
+from src.application.handlers import log_opportunity, generate_landing_for_hypothesis
+from src.application.advertising import AdvertisingManager
+from src.application.social_post_manager import SocialPostManager
+from src.infrastructure.social.twitter_poster import TwitterPoster
+from src.infrastructure.social.reddit_poster import RedditPoster
+from src.infrastructure.social.hackernews_poster import HackerNewsPoster
+from src.infrastructure.social.medium_poster import MediumPoster
+from src.application.handlers import log_opportunity, generate_landing_for_hypothesis
+from src.application.advertising import AdvertisingManager
+from src.application.social_post_manager import SocialPostManager
+from src.infrastructure.social.twitter_poster import TwitterPoster
+from src.infrastructure.social.reddit_poster import RedditPoster
+from src.infrastructure.social.hackernews_poster import HackerNewsPoster
+from src.infrastructure.social.medium_poster import MediumPoster
 
 load_dotenv()
 
@@ -115,7 +129,7 @@ async def list_hypotheses():
                     <h1>🧠 Opportunity Hunter</h1>
                     <p class="sub">AI-generated hypotheses based on real user problems</p>
                 </div>
-                <a href="/" class="back-link">← На головну</a>
+                <a href="/" class="back-link">← Back to home</a>
             </div>
             <div class="stats">
                 <div class="stat"><span>Total</span><strong>""" + str(len(rows)) + """</strong></div>
