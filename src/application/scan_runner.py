@@ -2,7 +2,7 @@ import asyncio
 import logging
 from src.infrastructure.storage import Storage
 from src.infrastructure.event_bus import EventBus
-from src.infrastructure.llm.ollama_client import OllamaClient
+from src.infrastructure.llm import get_llm_provider
 from src.application.opportunity_hunter import OpportunityHunter
 from src.application.handlers import log_opportunity, generate_landing_for_hypothesis
 from src.application.analyzer import OpportunityAnalyzer
@@ -26,7 +26,7 @@ async def run_scan(storage: Storage):
     event_bus.subscribe("opportunity_created", log_opportunity)
     event_bus.subscribe("hypothesis_generated", log_opportunity)
     
-    ollama = OllamaClient()
+    ollama = get_llm_provider()
     await ollama.is_available()
     
     analyzer = OpportunityAnalyzer(ollama)

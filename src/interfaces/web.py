@@ -12,7 +12,7 @@ from src.infrastructure.storage import Storage
 from src.domain.payment import Invoice
 from src.application.use_cases.payment_processor import PaymentProcessor
 from src.infrastructure.event_bus import EventBus
-from src.infrastructure.llm.ollama_client import OllamaClient
+from src.infrastructure.llm import get_llm_provider
 from src.application.opportunity_hunter import OpportunityHunter
 from src.application.analyzer import OpportunityAnalyzer
 from src.application.clustering import HypothesisClusterer
@@ -389,7 +389,7 @@ async def run_scan_impl(storage: Storage):
     event_bus.subscribe("opportunity_created", log_opportunity)
     event_bus.subscribe("hypothesis_generated", log_opportunity)
     
-    ollama = OllamaClient()
+    ollama = get_llm_provider()
     available = await ollama.is_available()
     if not available:
         logger.warning("⚠️ Ollama not available. Please start Ollama and install model llama3:latest")
