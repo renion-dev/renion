@@ -180,3 +180,4 @@ A: Так, змініть PAYMENT_PROVIDER=stripe у .env та додайте St
 
 Дякуємо, що використовуєте RENION Opportunity Hunter!
 Будуємо автономні системи разом. 🚀
+\n## Deployment on Railway\n\nRENION is deployed on Railway. The public URL is: https://renion-production.up.railway.app\n\nTo deploy your own instance, follow these steps:\n1. Fork the repository.\n2. Create a Railway project.\n3. Add environment variables (GROQ_API_KEY, STRIPE_SECRET_KEY, etc.).\n4. Deploy.\n\nSee the README for detailed instructions.

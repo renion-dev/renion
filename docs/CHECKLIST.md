@@ -1,169 +1,88 @@
-# RENION + Opportunity Hunter — Чекліст виконаних робіт (v1.0.0)
+# RENION + Opportunity Hunter — Checklist (v1.2.0)
 
-**Дата:** 2026-07-21  
-**Версія:** v1.0.0 (MVP)
+## Core
+- [x] Domain models (Object, Event, Payment, Invoice, SocialPost, ScanJob)
+- [x] Storage (SQLite + aiosqlite)
+- [x] EventBus (async)
+- [x] Clean architecture
+- [x] Configuration via .env
+- [x] Logging
+- [x] Git with tags
 
----
+## Data Collection
+- [x] RSS (Hacker News, Reddit, TechCrunch, Product Hunt)
+- [x] GitHub Issues (VS Code, React, Next.js, Angular, TensorFlow, Kubernetes, Grafana, Ollama)
+- [x] Job boards (Weworkremotely, Himalayas, HireWeb3)
+- [x] Deduplication by link
 
-## 1. Ядро RENION
+## LLM
+- [x] OllamaProvider (local)
+- [x] GroqProvider (cloud)
+- [x] LLM abstraction
 
-| № | Компонент | Статус |
-|---|-----------|--------|
-| 1.1 | Доменні сутності: `RenionObject`, `Event`, `Payment`, `Transaction`, `Invoice`, `SocialPost`, `ScanJob` | ✅ |
-| 1.2 | Сховище `Storage` (SQLite + aiosqlite) з методами для всіх сутностей | ✅ |
-| 1.3 | Подієва шина `EventBus` (асинхронна) | ✅ |
-| 1.4 | Чиста архітектура (domain / application / infrastructure / interfaces) | ✅ |
-| 1.5 | Конфігурація через `.env` | ✅ |
-| 1.6 | Логування (logging) | ✅ |
-| 1.7 | Git-репозиторій з історією | ✅ |
-| 1.8 | Назву змінено з AION на RENION | ✅ |
+## Hypothesis Generation
+- [x] Problem detection with frequency
+- [x] MVP description, CTA, hypothesis
+- [x] Save to DB (type Hypothesis)
+- [x] Invoice creation ($1.69)
 
----
+## Clustering & Market Assessment
+- [x] Clustering (sentence-transformers + KMeans)
+- [x] TAM/SAM/SOM estimation via LLM
+- [x] Store in metadata
 
-## 2. Модуль Opportunity Hunter
+## Landing Pages
+- [x] Fixed HTML template
+- [x] Modern design (gradients, shadows, responsive)
+- [x] Stripe Checkout button ($1.69)
+- [x] Save to landings/{id}.html
 
-### 2.1. Збір даних
-| № | Джерело | Статус |
-|---|---------|--------|
-| 2.1.1 | Hacker News (RSS) | ✅ |
-| 2.1.2 | Reddit (r/startups, r/SideProject, r/Entrepreneur) | ✅ |
-| 2.1.3 | TechCrunch (RSS) | ✅ |
-| 2.1.4 | Product Hunt (RSS) | ✅ |
-| 2.1.5 | GitHub Issues (VS Code, React, Next.js, Angular, TensorFlow, Kubernetes, Grafana) | ✅ |
-| 2.1.6 | Вакансії (Weworkremotely, Himalayas, HireWeb3) | ✅ |
-| 2.1.7 | Дедуплікація за `link` | ✅ |
+## Economic Layer
+- [x] Payment, Transaction, Invoice
+- [x] PaymentProvider abstraction
+- [x] SimulatedProvider
+- [x] StripeProvider + Stripe Checkout
+- [x] PaymentProcessor
+- [x] Endpoint `/api/create-checkout-session`
 
-### 2.2. Аналіз через LLM
-| № | Функція | Статус |
-|---|---------|--------|
-| 2.2.1 | Підключення до Ollama (локально) | ✅ |
-| 2.2.2 | Модель `llama3:latest` | ✅ |
-| 2.2.3 | Генерація промпту з обмеженням до 10 статей | ✅ |
-| 2.2.4 | Гнучкий парсинг JSON (retry + fallback regex) | ✅ |
-| 2.2.5 | Таймаут 300 секунд | ✅ |
+## Advertising (stub)
+- [x] AdvertisingManager
+- [x] Logging campaigns
+- [x] AdCampaign objects in DB
 
-### 2.3. Генерація гіпотез
-| № | Функція | Статус |
-|---|---------|--------|
-| 2.3.1 | Виявлення проблем з частотою | ✅ |
-| 2.3.2 | Формування MVP, гіпотези, CTA | ✅ |
-| 2.3.3 | Збереження в БД (тип `Hypothesis`) | ✅ |
-| 2.3.4 | Створення інвойсу (Invoice) на $1.69 | ✅ |
+## Social Posting
+- [x] Mastodon (active, free)
+- [x] Twitter (dry-run)
+- [x] Reddit, Hacker News, Medium (dry-run)
 
-### 2.4. Кластеризація та оцінка ринку
-| № | Функція | Статус |
-|---|---------|--------|
-| 2.4.1 | Кластеризація гіпотез (sentence-transformers + KMeans) | ✅ |
-| 2.4.2 | Збереження кластерів у БД (тип `Cluster`) | ✅ |
-| 2.4.3 | Оцінка TAM/SAM/SOM через LLM | ✅ |
-| 2.4.4 | Збереження оцінок у метаданих гіпотези | ✅ |
+## Web Interface
+- [x] Landing page for RENION
+- [x] Hypothesis list (/hypotheses)
+- [x] Hypothesis detail (/hypothesis/{id})
+- [x] "Run Scan" button with status
+- [x] TAM/SAM display
+- [x] Full English localization
 
-### 2.5. Генерація лендингів
-| № | Функція | Статус |
-|---|---------|--------|
-| 2.5.1 | Фіксований HTML-шаблон (сучасний дизайн) | ✅ |
-| 2.5.2 | Підстановка даних (заголовок, проблема, MVP, CTA) | ✅ |
-| 2.5.3 | Секція оплати з кнопкою "Pay Now" ($1.69) | ✅ |
-| 2.5.4 | Адаптивність, градієнти, тіні | ✅ |
-| 2.5.5 | Збереження у `landings/{id}.html` | ✅ |
-| 2.5.6 | Посилання на лендинг у веб-інтерфейсі | ✅ |
+## CLI
+- [x] Scan all sources
+- [x] Logging
+- [x] Event handling
 
-### 2.6. Економічний шар
-| № | Функція | Статус |
-|---|---------|--------|
-| 2.6.1 | Доменні сутності: `Payment`, `Transaction`, `Invoice` | ✅ |
-| 2.6.2 | Абстракція `PaymentProvider` | ✅ |
-| 2.6.3 | `SimulatedProvider` (заглушка з авто-підтвердженням) | ✅ |
-| 2.6.4 | `StripeProvider` (готовий, потребує ключів) | ✅ |
-| 2.6.5 | Use case `PaymentProcessor` | ✅ |
-| 2.6.6 | Ендпоінт `/api/pay/{hypothesis_id}` | ✅ |
-| 2.6.7 | Stripe Webhook (готовий, потребує налаштування) | ✅ |
+## Documentation
+- [x] 20+ ADR
+- [x] Monetization Strategy
+- [x] User Guide
+- [x] Status
+- [x] Checklist
+- [x] Release notes
 
-### 2.7. Реклама (заглушка)
-| № | Функція | Статус |
-|---|---------|--------|
-| 2.7.1 | Модуль `AdvertisingManager` | ✅ |
-| 2.7.2 | Логування запуску кампанії | ✅ |
-| 2.7.3 | Створення об'єкта `AdCampaign` у БД | ✅ |
-| 2.7.4 | Публікація події `ad_campaign_launched` | ✅ |
-| 2.7.5 | Інтеграція в основний потік | ✅ |
+## Deployment
+- [x] Railway deployment
+- [x] Environment variables
+- [x] Production ready
 
-### 2.8. Соціальний постинг
-| № | Функція | Статус |
-|---|---------|--------|
-| 2.8.1 | Доменний об'єкт `SocialPost` | ✅ |
-| 2.8.2 | Інтерфейс `SocialPoster` | ✅ |
-| 2.8.3 | `TwitterPoster` (dry-run + реальний API) | ✅ |
-| 2.8.4 | Use case `SocialPostManager` | ✅ |
-| 2.8.5 | Інтеграція в основний потік | ✅ |
-
-### 2.9. Веб-інтерфейс
-| № | Функція | Статус |
-|---|---------|--------|
-| 2.9.1 | Список гіпотез (таблиця) | ✅ |
-| 2.9.2 | Сторінка детального перегляду (картка) | ✅ |
-| 2.9.3 | Посилання на лендинг | ✅ |
-| 2.9.4 | Статистика (кількість гіпотез, лендингів) | ✅ |
-| 2.9.5 | Ендпоінт оплати | ✅ |
-| 2.9.6 | Кнопка "Запустити сканування" (з статусом) | ✅ |
-| 2.9.7 | Відображення TAM/SAM у картці гіпотези | ✅ |
-| 2.9.8 | Виправлено відображення `problem` та `landing_headline` | ✅ |
-
-### 2.10. CLI
-| № | Функція | Статус |
-|---|---------|--------|
-| 2.10.1 | Запуск сканування всіх джерел | ✅ |
-| 2.10.2 | Логування всіх етапів | ✅ |
-| 2.10.3 | Очікування завершення обробки подій | ✅ |
-| 2.10.4 | Автоматичний запуск лендингів, реклами, соцмереж | ✅ |
-
----
-
-## 3. Документація
-
-| № | Документ | Статус |
-|---|----------|--------|
-| 3.1 | Конституція RENE (MANIFEST.docx) | ✅ |
-| 3.2 | ADR-001 … ADR-018 | ✅ |
-| 3.3 | Стратегія монетизації | ✅ |
-| 3.4 | Snapshot v0.3.0 | ✅ |
-| 3.5 | RELEASE v1.0.0 | ✅ |
-| 3.6 | Launch Checklist | ✅ |
-| 3.7 | CHECKLIST.md (цей файл) | ✅ |
-
----
-
-## 4. Якість коду
-
-| № | Пункт | Статус |
-|---|-------|--------|
-| 4.1 | Тести (pytest) | ✅ 2 passed |
-| 4.2 | Стиль (ruff) | ✅ passed |
-| 4.3 | Типізація (mypy) | ✅ passed (з нотатками) |
-| 4.4 | `.gitignore` | ✅ |
-| 4.5 | Залежності у `pyproject.toml` | ✅ |
-| 4.6 | `.env.example` | ✅ |
-
----
-
-## 5. Що залишилось зробити (подальші кроки)
-
-| № | Задача | Пріоритет |
-|---|--------|-----------|
-| 5.1 | **Twitter реальний постинг** — додати API ключі | Високий |
-| 5.2 | **Stripe реальна оплата** — заміна SimulatedProvider | Високий |
-| 5.3 | **Публічний URL** — ngrok / VPS / Railway | Середній |
-| 5.4 | **Facebook/Google Ads** — реальна реклама | Низький |
-| 5.5 | **Нові джерела** — відгуки, форуми | Низький |
-| 5.6 | **Автоматичний деплой лендингів** — Vercel/Netlify | Низький |
-
----
-
-## Висновок
-
-✅ **RENION v1.0.0 — повний MVP Opportunity Hunter**  
-- Усі базові функції реалізовані: збір → аналіз → гіпотеза → інвойс → лендинг → реклама (заглушка) → соцмережі (dry-run).  
-- Додано кластеризацію, TAM/SAM, веб-кнопку запуску сканування.  
-- Документація повна (18 ADR).  
-
-🔜 **Наступний крок:** реальні інтеграції (Stripe, Twitter) та публічний доступ.
+## To Do (Next)
+- [ ] Real Twitter posting (add balance)
+- [ ] PostgreSQL migration
+- [ ] Email collection
+- [ ] Free/Pro/Business plans
