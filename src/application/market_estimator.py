@@ -1,14 +1,14 @@
 import logging
 from typing import Dict, Any, Optional
-from src.infrastructure.llm.ollama_client import OllamaClient
+from src.domain.interfaces.llm_provider import LLMProvider
 
 logger = logging.getLogger(__name__)
 
 class MarketEstimator:
     """Оцінює TAM/SAM/SOM для гіпотези за допомогою LLM."""
     
-    def __init__(self, ollama_client: OllamaClient):
-        self.ollama = ollama_client
+    def __init__(self, llm_provider: LLMProvider):
+        self.llm = llm_provider
 
     async def estimate(self, hypothesis_data: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -37,7 +37,7 @@ class MarketEstimator:
         
         system_prompt = "Ти експерт з оцінки ринків та стартапів. Відповідай лише JSON без зайвих пояснень."
         
-        response = await self.ollama.generate(prompt, system_prompt)
+        response = await self.llm.generate(prompt, system_prompt)
         
         if not response:
             return {

@@ -32,18 +32,18 @@ async def main():
     event_bus.subscribe("opportunity_created", log_opportunity)
     event_bus.subscribe("hypothesis_generated", log_opportunity)
     
-    ollama = get_llm_provider()
-    available = await ollama.is_available()
+    llm = get_llm_provider()
+    available = await llm.is_available()
     if not available:
         logger.warning("⚠️ Ollama not available. Please start Ollama and install model llama3:latest")
     else:
         logger.info("✅ Ollama available")
     
-    analyzer = OpportunityAnalyzer(ollama)
-    generator = LandingGenerator(ollama)
+    analyzer = OpportunityAnalyzer(llm)
+    generator = LandingGenerator(llm)
     advertiser = AdvertisingManager(storage, event_bus)
     clusterer = HypothesisClusterer()
-    market_estimator = MarketEstimator(ollama)
+    market_estimator = MarketEstimator(llm)
     
     # Соціальні постери (всі dry-run)
     twitter_poster = TwitterPoster()

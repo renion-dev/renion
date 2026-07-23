@@ -2,13 +2,13 @@ import logging
 import json
 import re
 from typing import List, Dict, Any, Optional
-from src.infrastructure.llm.ollama_client import OllamaClient
+from src.domain.interfaces.llm_provider import LLMProvider
 
 logger = logging.getLogger(__name__)
 
 class OpportunityAnalyzer:
-    def __init__(self, ollama_client: OllamaClient):
-        self.ollama = ollama_client
+    def __init__(self, llm_provider: LLMProvider):
+        self.llm = llm_provider
 
     async def analyze(self, articles: List[Dict[str, Any]]) -> Dict[str, Any]:
         if not articles:
@@ -64,7 +64,7 @@ class OpportunityAnalyzer:
         }}
         """
         
-        response = await self.ollama.generate(prompt, system_prompt)
+        response = await self.llm.generate(prompt, system_prompt)
         result = self._try_parse_response(response)
         
         if "error" in result or "raw" in result:
@@ -87,7 +87,7 @@ class OpportunityAnalyzer:
             Articles:
             {combined_text}
             """
-            response = await self.ollama.generate(retry_prompt, "Return only valid JSON.")
+            response = await self.llm.generate(retry_prompt, "Return only valid JSON.")
             result = self._try_parse_response(response)
         
         return result

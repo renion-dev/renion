@@ -26,14 +26,14 @@ async def run_scan(storage: Storage):
     event_bus.subscribe("opportunity_created", log_opportunity)
     event_bus.subscribe("hypothesis_generated", log_opportunity)
     
-    ollama = get_llm_provider()
-    await ollama.is_available()
+    llm = get_llm_provider()
+    await llm.is_available()
     
-    analyzer = OpportunityAnalyzer(ollama)
-    generator = LandingGenerator(ollama)
+    analyzer = OpportunityAnalyzer(llm)
+    generator = LandingGenerator(llm)
     advertiser = AdvertisingManager(storage, event_bus)
     clusterer = HypothesisClusterer()
-    market_estimator = MarketEstimator(ollama)
+    market_estimator = MarketEstimator(llm)
     
     twitter_poster = TwitterPoster()
     mastodon_poster = MastodonPoster()
