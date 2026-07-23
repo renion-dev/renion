@@ -552,3 +552,26 @@ async def create_checkout_session(hypothesis_id: str):
     except Exception as e:
         logger.error(f"Failed to create checkout session: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+# Планувальник сканування
+from src.infrastructure.scheduler import ScanScheduler
+from src.application.scan_runner import run_scan as run_scan_impl
+
+_scheduler = None
+
+@app.on_event("startup")
+async def startup_scheduler():
+    global _scheduler
+    schedule = os.getenv("SCAN_SCHEDULE")
+    if schedule:
+        _scheduler = ScanScheduler(storage, run_scan_impl, schedule)
+        _scheduler.start()
+        logger.info(f"Scheduler configured with schedule: {schedule}")
+    else:
+        logger.info("No SCAN_SCHEDULE set, automatic scanning disabled")
+
+@app.on_event("shutdown")
+async def shutdown_scheduler():
+    global _scheduler
+    if _scheduler:
+        _scheduler.stop()
