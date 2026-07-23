@@ -7,127 +7,24 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; 
-            background: #0b0b12; 
-            color: #f0f0f5; 
-            line-height: 1.6;
-            overflow-x: hidden;
-        }
+        body { font-family: 'Inter', sans-serif; background: #0b0b12; color: #f0f0f5; line-height: 1.6; overflow-x: hidden; }
         .container { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem; }
-        .hero { 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            text-align: center; 
-            padding: 4rem 0 2rem;
-            position: relative;
-        }
-        .hero::after {
-            content: '';
-            position: absolute;
-            top: -20%;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 700px;
-            height: 700px;
-            background: radial-gradient(circle, rgba(108,108,240,0.06) 0%, transparent 70%);
-            border-radius: 50%;
-            z-index: -1;
-        }
-        .hero .badge {
-            display: inline-block;
-            background: rgba(108,108,240,0.15);
-            color: #8b8bf7;
-            padding: 0.3rem 1.2rem;
-            border-radius: 60px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            letter-spacing: 0.5px;
-            margin-bottom: 1.5rem;
-            border: 1px solid rgba(108,108,240,0.2);
-        }
-        .hero h1 { 
-            font-size: 4rem; 
-            font-weight: 900; 
-            line-height: 1.1; 
-            margin-bottom: 1.2rem;
-            background: linear-gradient(135deg, #ffffff 20%, #a8a8ff 60%, #6c6cf0 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            max-width: 800px;
-        }
-        .hero .sub { 
-            font-size: 1.3rem; 
-            color: #b0b0c8; 
-            max-width: 600px; 
-            margin: 0 auto 2rem;
-            font-weight: 300;
-            line-height: 1.7;
-        }
-        .hero .cta-group {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 1rem;
-            justify-content: center;
-        }
-        .btn-primary {
-            background: #6c6cf0;
-            color: #fff;
-            padding: 0.9rem 2.8rem;
-            border-radius: 60px;
-            font-weight: 700;
-            font-size: 1.05rem;
-            border: none;
-            cursor: pointer;
-            transition: all 0.25s ease;
-            text-decoration: none;
-            display: inline-block;
-            box-shadow: 0 8px 24px rgba(108,108,240,0.25);
-        }
-        .btn-primary:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 12px 32px rgba(108,108,240,0.35);
-            background: #7a7aff;
-        }
-        .btn-secondary {
-            background: transparent;
-            color: #b0b0c8;
-            padding: 0.9rem 2.8rem;
-            border-radius: 60px;
-            font-weight: 600;
-            font-size: 1.05rem;
-            border: 1px solid #2a2a3e;
-            cursor: pointer;
-            transition: all 0.25s ease;
-            text-decoration: none;
-            display: inline-block;
-        }
-        .btn-secondary:hover {
-            border-color: #6c6cf0;
-            color: #fff;
-        }
+        .hero { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 4rem 0 2rem; position: relative; }
+        .hero::after { content: ''; position: absolute; top: -20%; left: 50%; transform: translateX(-50%); width: 700px; height: 700px; background: radial-gradient(circle, rgba(108,108,240,0.06) 0%, transparent 70%); border-radius: 50%; z-index: -1; }
+        .hero .badge { display: inline-block; background: rgba(108,108,240,0.15); color: #8b8bf7; padding: 0.3rem 1.2rem; border-radius: 60px; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 1.5rem; border: 1px solid rgba(108,108,240,0.2); }
+        .hero h1 { font-size: 4rem; font-weight: 900; line-height: 1.1; margin-bottom: 1.2rem; background: linear-gradient(135deg, #ffffff 20%, #a8a8ff 60%, #6c6cf0 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; max-width: 800px; }
+        .hero .sub { font-size: 1.3rem; color: #b0b0c8; max-width: 600px; margin: 0 auto 2rem; font-weight: 300; line-height: 1.7; }
+        .hero .cta-group { display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center; }
+        .btn-primary { background: #6c6cf0; color: #fff; padding: 0.9rem 2.8rem; border-radius: 60px; font-weight: 700; font-size: 1.05rem; border: none; cursor: pointer; transition: all 0.25s ease; text-decoration: none; display: inline-block; box-shadow: 0 8px 24px rgba(108,108,240,0.25); }
+        .btn-primary:hover { transform: translateY(-3px); box-shadow: 0 12px 32px rgba(108,108,240,0.35); background: #7a7aff; }
+        .btn-secondary { background: transparent; color: #b0b0c8; padding: 0.9rem 2.8rem; border-radius: 60px; font-weight: 600; font-size: 1.05rem; border: 1px solid #2a2a3e; cursor: pointer; transition: all 0.25s ease; text-decoration: none; display: inline-block; }
+        .btn-secondary:hover { border-color: #6c6cf0; color: #fff; }
         .section { margin: 4rem 0; }
         .section-title { font-size: 2.5rem; font-weight: 700; text-align: center; margin-bottom: 1rem; }
         .section-desc { text-align: center; color: #b0b0c8; max-width: 600px; margin: 0 auto 2.5rem; font-weight: 300; }
-        .grid-3 {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 2rem;
-        }
-        .card {
-            background: #14141f;
-            padding: 2rem 1.8rem;
-            border-radius: 24px;
-            border: 1px solid #1e1e30;
-            transition: all 0.3s ease;
-            text-align: center;
-        }
-        .card:hover {
-            transform: translateY(-6px);
-            border-color: #6c6cf0;
-            box-shadow: 0 12px 32px rgba(108,108,240,0.08);
-        }
+        .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 2rem; }
+        .card { background: #14141f; padding: 2rem 1.8rem; border-radius: 24px; border: 1px solid #1e1e30; transition: all 0.3s ease; text-align: center; }
+        .card:hover { transform: translateY(-6px); border-color: #6c6cf0; box-shadow: 0 12px 32px rgba(108,108,240,0.08); }
         .card .icon { font-size: 2.8rem; margin-bottom: 0.8rem; }
         .card h3 { font-size: 1.3rem; font-weight: 700; margin-bottom: 0.5rem; color: #e8e8ff; }
         .card p { color: #b0b0c8; font-weight: 300; font-size: 0.95rem; }
@@ -137,22 +34,14 @@
         .feature-item strong { color: #f0f0ff; }
         footer { text-align: center; color: #606080; padding: 2rem 0 1rem; border-top: 1px solid #1a1a2a; margin-top: 2rem; font-size: 0.9rem; font-weight: 300; }
         footer a { color: #8b8bf7; text-decoration: none; }
-        @media (max-width: 768px) {
-            .hero h1 { font-size: 2.5rem; }
-            .section-title { font-size: 1.8rem; }
-        }
-        @media (max-width: 480px) {
-            .hero h1 { font-size: 2rem; }
-            .hero .sub { font-size: 1rem; }
-            .grid-3 { grid-template-columns: 1fr; }
-        }
+        @media (max-width: 768px) { .hero h1 { font-size: 2.5rem; } .section-title { font-size: 1.8rem; } }
+        @media (max-width: 480px) { .hero h1 { font-size: 2rem; } .hero .sub { font-size: 1rem; } .grid-3 { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
     <div class="container">
-
         <section class="hero">
-            <span class="badge">🚀 v1.0.2 — Stable</span>
+            <span class="badge">🚀 v1.2.0 — Production Ready</span>
             <h1>RENION<br>Autonomous Intelligence Network</h1>
             <p class="sub">
                 RENION is an operating environment for autonomous agents.<br>
@@ -178,12 +67,12 @@
                 <div class="card">
                     <div class="icon">📡</div>
                     <h3>Data Collection</h3>
-                    <p>Scans RSS, GitHub Issues, job postings and other sources.</p>
+                    <p>Scans 12+ sources: RSS, GitHub Issues, job boards, and more.</p>
                 </div>
                 <div class="card">
                     <div class="icon">🧠</div>
                     <h3>AI Analysis</h3>
-                    <p>Uses local LLM to identify problems and formulate hypotheses.</p>
+                    <p>Uses Groq (or local Ollama) to identify problems and generate hypotheses.</p>
                 </div>
                 <div class="card">
                     <div class="icon">📊</div>
@@ -193,7 +82,7 @@
                 <div class="card">
                     <div class="icon">🌐</div>
                     <h3>Landing Pages</h3>
-                    <p>Automatically generates modern landing pages with payment button.</p>
+                    <p>Automatically generates modern landing pages with Stripe Checkout.</p>
                 </div>
                 <div class="card">
                     <div class="icon">💰</div>
@@ -201,9 +90,9 @@
                     <p>Invoices, payments, provider abstraction (Stripe ready).</p>
                 </div>
                 <div class="card">
-                    <div class="icon">🐦</div>
+                    <div class="icon">🐘</div>
                     <h3>Social Posting</h3>
-                    <p>Automatically publishes hypotheses to Twitter (dry-run or real).</p>
+                    <p>Automatically publishes hypotheses to Mastodon (free) and Twitter (optional).</p>
                 </div>
             </div>
         </section>
@@ -217,7 +106,7 @@
                 </div>
                 <div class="feature-item">
                     <span class="icon">2️⃣</span>
-                    <div><strong>LLM Analysis</strong> — Local model (Ollama) identifies recurring problems and formulates hypotheses.</div>
+                    <div><strong>LLM Analysis</strong> — Groq (or local Ollama) identifies recurring problems and formulates hypotheses.</div>
                 </div>
                 <div class="feature-item">
                     <span class="icon">3️⃣</span>
@@ -225,15 +114,15 @@
                 </div>
                 <div class="feature-item">
                     <span class="icon">4️⃣</span>
-                    <div><strong>Landing Generation</strong> — A modern landing page with payment button is created for the hypothesis.</div>
+                    <div><strong>Landing Generation</strong> — A modern landing page with Stripe Checkout is created for the hypothesis.</div>
                 </div>
                 <div class="feature-item">
                     <span class="icon">5️⃣</span>
-                    <div><strong>Automatic Posting</strong> — Hypothesis is published to Twitter and an ad campaign is launched (stub).</div>
+                    <div><strong>Automatic Posting</strong> — Hypothesis is published to Mastodon (free) and Twitter (optional).</div>
                 </div>
                 <div class="feature-item">
                     <span class="icon">6️⃣</span>
-                    <div><strong>Payment Collection</strong> — Users can pay for access to the hypothesis (SimulatedProvider or Stripe).</div>
+                    <div><strong>Payment Collection</strong> — Users can pay for access via Stripe Checkout ($1.69).</div>
                 </div>
             </div>
         </section>
@@ -249,7 +138,6 @@
         <footer>
             © 2026 <a href="#">RENION</a> — Built with ❤️ by RENE Engineering
         </footer>
-
     </div>
 </body>
 </html>
