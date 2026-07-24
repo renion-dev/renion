@@ -382,3 +382,42 @@
     </div>
 </body>
 </html>
+
+        <!-- EMAIL SUBSCRIPTION -->
+        <section class="section" style="background: #14141f; border-radius: 24px; padding: 2.5rem 2rem; border: 1px solid #2a2a44; margin: 3rem 0;">
+            <h2 style="font-size: 1.8rem; font-weight: 700; text-align: center; margin-bottom: 0.8rem;">📩 Get Early Access</h2>
+            <p style="color: #b0b0c8; text-align: center; max-width: 500px; margin: 0 auto 1.8rem;">
+                Join the waitlist and be the first to know when we launch. No spam, just updates.
+            </p>
+            <form id="subscribeForm" style="display: flex; flex-wrap: wrap; gap: 0.8rem; justify-content: center; max-width: 500px; margin: 0 auto;">
+                <input type="email" id="subscriberEmail" placeholder="Enter your email" required style="flex: 1; min-width: 200px; padding: 0.9rem 1.4rem; border-radius: 60px; border: 1px solid #2a2a3e; background: #0b0b12; color: #fff; font-size: 1rem; outline: none; transition: 0.2s;">
+                <button type="submit" style="background: #6c6cf0; color: #fff; padding: 0.9rem 2.5rem; border-radius: 60px; font-weight: 700; font-size: 1.05rem; border: none; cursor: pointer; transition: 0.2s; box-shadow: 0 8px 24px rgba(108,108,240,0.25);">Subscribe</button>
+            </form>
+            <div id="subscribeMessage" style="text-align: center; margin-top: 1rem; color: #b0b0c8; font-size: 0.9rem;"></div>
+            <p class="disclaimer" style="text-align: center; font-size: 0.75rem; color: #606080; margin-top: 1rem;">We respect your privacy. Unsubscribe anytime.</p>
+        </section>
+        <script>
+            document.getElementById('subscribeForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const email = document.getElementById('subscriberEmail').value;
+                const messageDiv = document.getElementById('subscribeMessage');
+                
+                try {
+                    const response = await fetch('/api/subscribe', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email })
+                    });
+                    const data = await response.json();
+                    
+                    if (response.ok) {
+                        messageDiv.innerHTML = '✅ ' + data.message;
+                        document.getElementById('subscriberEmail').value = '';
+                    } else {
+                        messageDiv.innerHTML = '❌ ' + (data.detail || 'Something went wrong');
+                    }
+                } catch (error) {
+                    messageDiv.innerHTML = '❌ Network error. Please try again.';
+                }
+            });
+        </script>
