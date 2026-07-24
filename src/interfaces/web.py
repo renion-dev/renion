@@ -575,3 +575,47 @@ async def shutdown_scheduler():
     global _scheduler
     if _scheduler:
         _scheduler.stop()
+
+@app.post("/api/subscribe")
+async def subscribe(request: Request):
+    """Підписка на оновлення (збереження email)."""
+    data = await request.json()
+    email = data.get("email")
+    
+    if not email:
+        raise HTTPException(status_code=400, detail="Email is required")
+    
+    # Проста валідація email
+    import re
+    if not re.match(r"^[^@]+@[^@]+\.[^@]+$", email):
+        raise HTTPException(status_code=400, detail="Invalid email format")
+    
+    # Перевіряємо, чи вже існує
+    if storage.conn is None:
+        await storage.init()
+    
+    cursor = await storage.conn.execute(
+        "SELECT id FROM objects WHERE type='Subscriber' AND json_extract(metadata, '$.email') = ?",
+        (email,)
+    )
+    existing = await cursor.fetchone()
+    if existing:
+        return {"message": "You are already subscribed!"}
+    
+    # Створюємо об'єкт підписника
+    from src.domain.object import AionObject
+    import uuid
+    from datetime import datetime
+    
+    subscriber = AionObject(
+        type="Subscriber",
+        metadata={
+            "email": email,
+            "status": "active",
+            "subscribed_at": datetime.utcnow().isoformat()
+        }
+    )
+    await storage.save_object(subscriber)
+    
+    logger.info(f"📧 New subscriber: {email}")
+    return {"message": "Subscribed successfully! Thank you."}
